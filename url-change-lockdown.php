@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Prevents programmatic URL changes (site URLs, slugs, parent pages, taxonomies) unless explicitly allowed.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: basicus

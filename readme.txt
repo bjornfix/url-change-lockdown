@@ -1,10 +1,10 @@
 === URL Change Lockdown ===
 Contributors: basicus
-Tags: security, hardening, siteurl, home, permalinks, slugs
+Tags: security, hardening, siteurl, permalinks, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,8 @@ No. Manual updates in Settings > General, Settings > Permalinks, and post edit s
 Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are blocked unless explicitly allowed.
 
 == Changelog ==
+= 1.1.2 =
+- Reduce plugin tags to meet WordPress.org limits.
 = 1.1.1 =
 - Allow manual bulk edits via wp-admin without triggering URL locks.
 = 1.1.0 =
@@ -42,6 +44,8 @@ Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are b
 - Initial release.
 
 == Upgrade Notice ==
+= 1.1.2 =
+Readme cleanup (tag limit).
 = 1.1.1 =
 Fixes manual bulk edit handling in wp-admin.
 = 1.1.0 =
