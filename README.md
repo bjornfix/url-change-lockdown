@@ -25,5 +25,14 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - https://profiles.wordpress.org/basicus/
 
 ## Changelog
+### 1.1.2
+- Readme tag cleanup (WordPress.org limit).
+
+### 1.1.1
+- Allow manual bulk edits via wp-admin without triggering URL locks.
+
+### 1.1.0
+- Block programmatic changes to slugs, parent pages, taxonomies, and permalink settings.
+
 ### 1.0.0
 - Initial release.
