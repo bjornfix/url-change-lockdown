@@ -4,7 +4,7 @@ Tags: security, hardening, siteurl, home, permalinks, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,12 +34,16 @@ No. Manual updates in Settings > General, Settings > Permalinks, and post edit s
 Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are blocked unless explicitly allowed.
 
 == Changelog ==
+= 1.1.1 =
+- Allow manual bulk edits via wp-admin without triggering URL locks.
 = 1.1.0 =
 - Block programmatic changes to slugs, parent pages, taxonomies, and permalink settings.
 = 1.0.0 =
 - Initial release.
 
 == Upgrade Notice ==
+= 1.1.1 =
+Fixes manual bulk edit handling in wp-admin.
 = 1.1.0 =
 Adds protections for slugs, taxonomy assignments, and permalink settings.
 = 1.0.0 =

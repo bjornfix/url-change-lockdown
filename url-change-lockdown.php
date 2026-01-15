@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Prevents programmatic URL changes (site URLs, slugs, parent pages, taxonomies) unless explicitly allowed.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -117,6 +117,10 @@ function url_change_lockdown_has_post_nonce(int $post_id): bool
 
     $nonce = isset($_POST['_wpnonce']) ? sanitize_text_field(wp_unslash($_POST['_wpnonce'])) : '';
     if ($nonce !== '' && wp_verify_nonce($nonce, 'update-post_' . $post_id)) {
+        return true;
+    }
+
+    if ($nonce !== '' && wp_verify_nonce($nonce, 'bulk-posts')) {
         return true;
     }
 
