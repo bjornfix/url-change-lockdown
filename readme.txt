@@ -1,18 +1,18 @@
 === URL Change Lockdown ===
 Contributors: basicus
-Tags: security, hardening, siteurl, home
+Tags: security, hardening, siteurl, home, permalinks, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Prevent programmatic changes to the WordPress home and siteurl options.
+Prevent programmatic changes to WordPress URLs, slugs, and taxonomies.
 
 == Description ==
-URL Change Lockdown blocks programmatic updates to the WordPress "home" and "siteurl" options.
-Manual changes through Settings > General are allowed for administrators.
+URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, and taxonomy assignments.
+Manual changes in wp-admin are allowed for administrators.
 
 To allow programmatic changes, define one of these constants in wp-config.php:
 - URL_LOCKDOWN_ALLOW
@@ -28,12 +28,19 @@ To allow programmatic changes, define one of these constants in wp-config.php:
 Define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
 
 = Does this block manual updates in wp-admin? =
-No. Administrators can still change the Site Address and WordPress Address in Settings > General.
+No. Manual updates in Settings > General, Settings > Permalinks, and post edit screens still work.
+
+= Does it block post/page slugs and taxonomy changes? =
+Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are blocked unless explicitly allowed.
 
 == Changelog ==
+= 1.1.0 =
+- Block programmatic changes to slugs, parent pages, taxonomies, and permalink settings.
 = 1.0.0 =
 - Initial release.
 
 == Upgrade Notice ==
+= 1.1.0 =
+Adds protections for slugs, taxonomy assignments, and permalink settings.
 = 1.0.0 =
 Initial release.

@@ -1,13 +1,14 @@
 # URL Change Lockdown
 [![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 
-URL Change Lockdown blocks programmatic updates to the WordPress "home" and "siteurl" options.
+URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, and taxonomies.
 
 ## Behavior
-- Blocks programmatic updates to home/siteurl.
-- Allows manual changes through Settings > General for administrators.
+- Blocks programmatic updates to home/siteurl and permalink settings.
+- Blocks programmatic changes to post slugs, parent pages, and taxonomies.
+- Allows manual changes through wp-admin for administrators.
 - Optional constants to allow programmatic changes temporarily.
 
 ## Configuration
