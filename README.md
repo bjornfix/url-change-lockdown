@@ -1,4 +1,5 @@
 # URL Change Lockdown
+[![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
 Stable tag: 1.0.0
 
