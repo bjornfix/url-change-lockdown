@@ -1,15 +1,16 @@
 # URL Change Lockdown
 [![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 
-URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, taxonomies, and URL changes inside post content/excerpts.
+URL Change Lockdown blocks URL-related changes unless explicitly allowed. This includes site/permalink URL settings, slugs/parents/taxonomy URL drivers, content/excerpt links, and link changes inside post meta/custom fields.
 
 ## Behavior
-- Blocks programmatic updates to home/siteurl and permalink settings.
-- Blocks programmatic changes to post slugs, parent pages, and taxonomies.
-- Blocks programmatic additions/changes/removals of URLs in `post_content` and `post_excerpt`.
-- Allows manual changes through wp-admin for administrators.
+- Blocks updates to `home`, `siteurl`, `permalink_structure`, `category_base`, and `tag_base`.
+- Blocks slug/parent URL-driver changes on posts and terms.
+- Blocks additions/changes/removals of URLs in `post_content`, `post_excerpt`, and `post_content_filtered`.
+- Blocks additions/changes/removals of URLs in post meta/custom fields.
+- Keeps non-URL content edits allowed.
 - Optional constants to allow programmatic changes temporarily.
 
 ## Configuration
@@ -26,6 +27,11 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - https://profiles.wordpress.org/basicus/
 
 ## Changelog
+### 1.3.0
+- Hardened lock scope to deny URL mutations by default across content, meta/custom fields, term URL drivers, and URL settings.
+- Removed REST/header-based manual allowance from the URL lock path to prevent API bypasses.
+- Kept non-URL content edits allowed to preserve URL-only scope.
+
 ### 1.2.0
 - Hardened REST/manual detection by requiring a wp-admin referer in addition to REST nonce.
 - Added URL-diff locking for `post_content` and `post_excerpt` to block programmatic link changes.

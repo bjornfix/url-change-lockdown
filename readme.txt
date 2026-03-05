@@ -4,15 +4,16 @@ Tags: security, hardening, siteurl, permalinks, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Prevent programmatic changes to WordPress URLs, slugs, taxonomies, and content links.
+Prevent URL-related WordPress changes unless explicitly allowed.
 
 == Description ==
-URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, taxonomy assignments, and URL changes inside post content/excerpts.
-Manual changes in wp-admin are allowed for administrators.
+URL Change Lockdown blocks URL-related changes unless explicitly allowed.
+This includes site/permalink settings, slug/parent/taxonomy URL drivers, content/excerpt links, and link changes in post meta/custom fields.
+Non-URL content edits remain allowed.
 
 To allow programmatic changes, define one of these constants in wp-config.php:
 - URL_LOCKDOWN_ALLOW
@@ -36,7 +37,14 @@ Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are b
 = Does it block links in post content? =
 Yes. Programmatic additions/changes/removals of URLs in `post_content` and `post_excerpt` are blocked unless explicitly allowed.
 
+= Does it block links inside custom fields/post meta? =
+Yes. URL changes in post meta/custom fields are also blocked unless explicitly allowed.
+
 == Changelog ==
+= 1.3.0 =
+- Hardened lock scope to deny URL mutations by default across content, post meta/custom fields, term URL drivers, and URL settings.
+- Removed REST/header-based manual allowance from URL lock path to prevent API bypasses.
+- Kept non-URL content edits allowed.
 = 1.2.0 =
 - Hardened REST/manual detection by requiring a wp-admin referer in addition to REST nonce.
 - Added URL-diff locking for post content and excerpts.
@@ -50,6 +58,8 @@ Yes. Programmatic additions/changes/removals of URLs in `post_content` and `post
 - Initial release.
 
 == Upgrade Notice ==
+= 1.3.0 =
+Stronger URL lock coverage across content, meta/custom fields, and URL-driver fields while keeping non-URL edits allowed.
 = 1.2.0 =
 Adds blocking for programmatic link changes in post content/excerpts and tightens REST/manual detection.
 = 1.1.2 =
