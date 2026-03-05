@@ -1,16 +1,15 @@
 # URL Change Lockdown
 [![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 
-URL Change Lockdown blocks URL-related changes unless explicitly allowed. This includes site/permalink URL settings, slugs/parents/taxonomy URL drivers, content/excerpt links, and link changes inside post meta/custom fields.
+URL Change Lockdown blocks slug changes unless explicitly allowed.
 
 ## Behavior
-- Blocks updates to `home`, `siteurl`, `permalink_structure`, `category_base`, and `tag_base`.
-- Blocks slug/parent URL-driver changes on posts and terms.
-- Blocks additions/changes/removals of URLs in `post_content`, `post_excerpt`, and `post_content_filtered`.
-- Blocks additions/changes/removals of URLs in post meta/custom fields.
-- Keeps non-URL content edits allowed.
+- Blocks programmatic changes to existing post slugs (`post_name`).
+- Blocks programmatic changes to existing taxonomy term slugs.
+- Does not lock links inside post content.
+- Does not lock post meta values.
 - Optional constants to allow programmatic changes temporarily.
 
 ## Configuration
@@ -27,6 +26,11 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - https://profiles.wordpress.org/basicus/
 
 ## Changelog
+### 1.4.0
+- Scope clarified and enforced as slug-only protection.
+- Removed content URL, metadata URL, and option/permalink guards.
+- Keeps post and taxonomy slug locks in place for programmatic updates.
+
 ### 1.3.0
 - Hardened lock scope to deny URL mutations by default across content, meta/custom fields, term URL drivers, and URL settings.
 - Removed REST/header-based manual allowance from the URL lock path to prevent API bypasses.

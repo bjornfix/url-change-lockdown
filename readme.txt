@@ -4,16 +4,15 @@ Tags: security, hardening, siteurl, permalinks, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Prevent URL-related WordPress changes unless explicitly allowed.
+Prevent slug changes unless explicitly allowed.
 
 == Description ==
-URL Change Lockdown blocks URL-related changes unless explicitly allowed.
-This includes site/permalink settings, slug/parent/taxonomy URL drivers, content/excerpt links, and link changes in post meta/custom fields.
-Non-URL content edits remain allowed.
+URL Change Lockdown blocks programmatic changes to existing post and taxonomy slugs unless explicitly allowed.
+It does not lock links in post content and does not lock post meta values.
 
 To allow programmatic changes, define one of these constants in wp-config.php:
 - URL_LOCKDOWN_ALLOW
@@ -29,18 +28,22 @@ To allow programmatic changes, define one of these constants in wp-config.php:
 Define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
 
 = Does this block manual updates in wp-admin? =
-No. Manual updates in Settings > General, Settings > Permalinks, and post edit screens still work.
+No. Manual updates in wp-admin still work.
 
-= Does it block post/page slugs and taxonomy changes? =
-Yes. Programmatic changes to slugs, parent pages, and taxonomy assignments are blocked unless explicitly allowed.
+= Does it block post/page slugs and taxonomy slugs? =
+Yes. Programmatic slug changes are blocked unless explicitly allowed.
 
 = Does it block links in post content? =
-Yes. Programmatic additions/changes/removals of URLs in `post_content` and `post_excerpt` are blocked unless explicitly allowed.
+No. Content links are not locked by this plugin.
 
 = Does it block links inside custom fields/post meta? =
-Yes. URL changes in post meta/custom fields are also blocked unless explicitly allowed.
+No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 1.4.0 =
+- Scope clarified and enforced as slug-only protection.
+- Removed content URL, metadata URL, and option/permalink guards.
+- Keeps post and taxonomy slug locks in place for programmatic updates.
 = 1.3.0 =
 - Hardened lock scope to deny URL mutations by default across content, post meta/custom fields, term URL drivers, and URL settings.
 - Removed REST/header-based manual allowance from URL lock path to prevent API bypasses.
@@ -58,6 +61,8 @@ Yes. URL changes in post meta/custom fields are also blocked unless explicitly a
 - Initial release.
 
 == Upgrade Notice ==
+= 1.4.0 =
+Plugin now protects slugs only (post and taxonomy). Content links and post meta are no longer locked.
 = 1.3.0 =
 Stronger URL lock coverage across content, meta/custom fields, and URL-driver fields while keeping non-URL edits allowed.
 = 1.2.0 =
