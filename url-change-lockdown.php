@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Prevents programmatic URL changes (site URLs, slugs, parent pages, taxonomies) unless explicitly allowed.
- * Version: 1.1.2
+ * Version: 1.2.0
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -109,6 +109,20 @@ function url_change_lockdown_has_rest_nonce(): bool
     return (bool) wp_verify_nonce($nonce, 'wp_rest');
 }
 
+function url_change_lockdown_has_wp_admin_referer(): bool
+{
+    if (empty($_SERVER['HTTP_REFERER'])) {
+        return false;
+    }
+
+    $referer = esc_url_raw(wp_unslash($_SERVER['HTTP_REFERER']));
+    if ($referer === '') {
+        return false;
+    }
+
+    return strpos($referer, admin_url()) === 0;
+}
+
 function url_change_lockdown_has_post_nonce(int $post_id): bool
 {
     if (!is_admin()) {
@@ -138,11 +152,47 @@ function url_change_lockdown_is_manual_content_change(int $post_id): bool
         return false;
     }
 
-    if (url_change_lockdown_has_rest_nonce()) {
+    if (url_change_lockdown_has_rest_nonce() && url_change_lockdown_has_wp_admin_referer()) {
         return true;
     }
 
     return $post_id > 0 && url_change_lockdown_has_post_nonce($post_id);
+}
+
+function url_change_lockdown_extract_content_urls(string $content): array
+{
+    if ($content === '') {
+        return [];
+    }
+
+    $urls = wp_extract_urls($content);
+    if (!is_array($urls) || empty($urls)) {
+        return [];
+    }
+
+    $normalized = array_map(
+        static function ($url): string {
+            return esc_url_raw((string) $url);
+        },
+        $urls
+    );
+
+    $normalized = array_values(
+        array_filter(
+            array_unique($normalized),
+            static function (string $url): bool {
+                return $url !== '';
+            }
+        )
+    );
+
+    sort($normalized);
+    return $normalized;
+}
+
+function url_change_lockdown_urls_changed(string $before, string $after): bool
+{
+    return url_change_lockdown_extract_content_urls($before) !== url_change_lockdown_extract_content_urls($after);
 }
 
 function url_change_lockdown_guard_post_data(array $data, array $postarr): array
@@ -175,6 +225,22 @@ function url_change_lockdown_guard_post_data(array $data, array $postarr): array
 
     if (isset($data['post_type']) && $data['post_type'] !== $existing->post_type) {
         $data['post_type'] = $existing->post_type;
+    }
+
+    if (
+        array_key_exists('post_content', $data) &&
+        is_string($data['post_content']) &&
+        url_change_lockdown_urls_changed((string) $existing->post_content, $data['post_content'])
+    ) {
+        $data['post_content'] = (string) $existing->post_content;
+    }
+
+    if (
+        array_key_exists('post_excerpt', $data) &&
+        is_string($data['post_excerpt']) &&
+        url_change_lockdown_urls_changed((string) $existing->post_excerpt, $data['post_excerpt'])
+    ) {
+        $data['post_excerpt'] = (string) $existing->post_excerpt;
     }
 
     return $data;

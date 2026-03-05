@@ -1,13 +1,14 @@
 # URL Change Lockdown
 [![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 
-URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, and taxonomies.
+URL Change Lockdown blocks programmatic changes to site URLs, permalink settings, post slugs, parent pages, taxonomies, and URL changes inside post content/excerpts.
 
 ## Behavior
 - Blocks programmatic updates to home/siteurl and permalink settings.
 - Blocks programmatic changes to post slugs, parent pages, and taxonomies.
+- Blocks programmatic additions/changes/removals of URLs in `post_content` and `post_excerpt`.
 - Allows manual changes through wp-admin for administrators.
 - Optional constants to allow programmatic changes temporarily.
 
@@ -25,6 +26,10 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - https://profiles.wordpress.org/basicus/
 
 ## Changelog
+### 1.2.0
+- Hardened REST/manual detection by requiring a wp-admin referer in addition to REST nonce.
+- Added URL-diff locking for `post_content` and `post_excerpt` to block programmatic link changes.
+
 ### 1.1.2
 - Readme tag cleanup (WordPress.org limit).
 
