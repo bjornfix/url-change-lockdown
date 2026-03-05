@@ -1,20 +1,20 @@
 === URL Change Lockdown ===
 Contributors: basicus
-Tags: security, hardening, siteurl, permalinks, slugs
+Tags: security, hardening, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Prevent slug changes unless explicitly allowed.
+Freeze existing post and taxonomy slugs unless explicitly unlocked.
 
 == Description ==
-URL Change Lockdown blocks programmatic changes to existing post and taxonomy slugs unless explicitly allowed.
+URL Change Lockdown blocks slug changes on existing posts and taxonomy terms unless explicitly allowed.
 It does not lock links in post content and does not lock post meta values.
 
-To allow programmatic changes, define one of these constants in wp-config.php:
+To allow slug changes temporarily, define one of these constants in wp-config.php:
 - URL_LOCKDOWN_ALLOW
 - URL_LOCKDOWN_ALLOW_CLI (for WP-CLI)
 
@@ -24,14 +24,14 @@ To allow programmatic changes, define one of these constants in wp-config.php:
 3. (Optional) Define URL_LOCKDOWN_ALLOW or URL_LOCKDOWN_ALLOW_CLI in wp-config.php.
 
 == Frequently Asked Questions ==
-= How do I allow a programmatic change? =
+= How do I allow a slug change? =
 Define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
 
 = Does this block manual updates in wp-admin? =
-No. Manual updates in wp-admin still work.
+Yes. Existing post and taxonomy slugs are kept unchanged unless an allow constant is set.
 
 = Does it block post/page slugs and taxonomy slugs? =
-Yes. Programmatic slug changes are blocked unless explicitly allowed.
+Yes. Slug changes are blocked unless explicitly allowed.
 
 = Does it block links in post content? =
 No. Content links are not locked by this plugin.
@@ -40,6 +40,10 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 1.4.1 =
+- Clarified behavior: existing slugs are frozen across update paths unless explicitly unlocked.
+- Moved slug guards to late filter priority to reduce downstream override risk.
+- Documentation now explicitly states that post-content URLs are not locked.
 = 1.4.0 =
 - Scope clarified and enforced as slug-only protection.
 - Removed content URL, metadata URL, and option/permalink guards.
@@ -61,6 +65,8 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 1.4.1 =
+Existing slugs are now explicitly frozen unless unlocked; content URLs remain outside plugin scope.
 = 1.4.0 =
 Plugin now protects slugs only (post and taxonomy). Content links and post meta are no longer locked.
 = 1.3.0 =

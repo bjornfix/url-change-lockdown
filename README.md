@@ -1,16 +1,16 @@
 # URL Change Lockdown
 [![Release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
 
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 
 URL Change Lockdown blocks slug changes unless explicitly allowed.
 
 ## Behavior
-- Blocks programmatic changes to existing post slugs (`post_name`).
-- Blocks programmatic changes to existing taxonomy term slugs.
+- Freezes existing post slugs (`post_name`) on update unless explicitly unlocked.
+- Freezes existing taxonomy term slugs on update unless explicitly unlocked.
 - Does not lock links inside post content.
 - Does not lock post meta values.
-- Optional constants to allow programmatic changes temporarily.
+- Optional constants to allow slug changes temporarily.
 
 ## Configuration
 Add one of the following constants to `wp-config.php` when needed:
@@ -26,6 +26,11 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - https://profiles.wordpress.org/basicus/
 
 ## Changelog
+### 1.4.1
+- Clarified behavior: existing slugs are frozen across update paths unless explicitly unlocked.
+- Moved slug guards to late filter priority to prevent downstream filter overrides.
+- Documentation now explicitly states that post-content URLs are not locked.
+
 ### 1.4.0
 - Scope clarified and enforced as slug-only protection.
 - Removed content URL, metadata URL, and option/permalink guards.
