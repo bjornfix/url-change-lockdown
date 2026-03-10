@@ -4,7 +4,7 @@ Tags: security, hardening, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,10 +18,21 @@ To allow slug changes temporarily, define one of these constants in wp-config.ph
 - URL_LOCKDOWN_ALLOW
 - URL_LOCKDOWN_ALLOW_CLI (for WP-CLI)
 
+= Use Cases =
+
+* Keep existing post and taxonomy URLs stable during imports or sync jobs
+* Prevent accidental slug changes during programmatic updates
+* Let editors update content while keeping established slugs frozen
+* Require an explicit unlock step before permalink-related changes happen
+
 == Installation ==
 1. Upload the plugin folder to /wp-content/plugins/.
 2. Activate the plugin in WordPress.
 3. (Optional) Define URL_LOCKDOWN_ALLOW or URL_LOCKDOWN_ALLOW_CLI in wp-config.php.
+
+= Links =
+* [GitHub Releases](https://github.com/bjornfix/url-change-lockdown/releases)
+* [Devenia Plugins](https://devenia.com/plugins/)
 
 == Frequently Asked Questions ==
 = How do I allow a slug change? =
@@ -40,6 +51,8 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 1.4.2 =
+- Docs: expanded the WordPress-standard `readme.txt` so the published ZIP now includes fuller behavior, installation, use-case, and Devenia link sections
 = 1.4.1 =
 - Clarified behavior: existing slugs are frozen across update paths unless explicitly unlocked.
 - Moved slug guards to late filter priority to reduce downstream override risk.

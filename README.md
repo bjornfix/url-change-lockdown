@@ -6,7 +6,7 @@ Freeze existing post and taxonomy slugs unless explicitly unlocked.
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
 **Tested up to:** 6.9
-**Stable tag:** 1.4.1
+**Stable tag:** 1.4.2
 **Requires PHP:** 7.4
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,6 +49,9 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 - Require an explicit unlock step before any slug rename happens
 
 ## Changelog
+
+### 1.4.2
+- Docs: expanded the WordPress-standard `readme.txt` so the published ZIP now includes fuller behavior, installation, use-case, and Devenia link sections
 
 ### 1.4.1
 - Clarified behavior: existing slugs are frozen across update paths unless explicitly unlocked
