@@ -2,7 +2,7 @@
 
 Freeze existing post and taxonomy slugs unless explicitly unlocked.
 
-[![GitHub release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag&sort=semver)](https://github.com/bjornfix/url-change-lockdown/releases)
+[![GitHub release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown?display_name=tag)](https://github.com/bjornfix/url-change-lockdown/releases)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
 **Tested up to:** 6.9
