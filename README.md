@@ -6,7 +6,7 @@ Freeze existing post and taxonomy slugs unless explicitly unlocked.
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 
 **Tested up to:** 6.9
-**Stable tag:** 1.4.2
+**Stable tag:** 1.4.3
 **Requires PHP:** 7.4
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
@@ -19,8 +19,9 @@ It does not lock links inside post content and does not lock post meta values. T
 
 ## Behavior
 
-- Freezes existing post slugs (`post_name`) on update unless explicitly unlocked
-- Freezes existing taxonomy term slugs on update unless explicitly unlocked
+- Freezes existing post slugs (`post_name`) on programmatic update unless explicitly unlocked
+- Freezes existing taxonomy term slugs on programmatic update unless explicitly unlocked
+- Allows authorized human edits from the WordPress admin/editor UI
 - Does not lock links inside post content
 - Does not lock post meta values
 - Supports temporary allow constants when you intentionally need to rename slugs
@@ -45,10 +46,15 @@ define('URL_LOCKDOWN_ALLOW_CLI', true);
 
 - Keep established post URLs stable during imports or sync jobs
 - Prevent accidental taxonomy slug churn during programmatic updates
-- Allow editors to change content without allowing hidden permalink changes
+- Allow editors to intentionally change slugs in the WordPress editor
+- Prevent hidden permalink changes from imports, sync jobs, MCP tools, and other automated writers
 - Require an explicit unlock step before any slug rename happens
 
 ## Changelog
+
+### 1.4.3
+- Fixed manual editing: authorized wp-admin/editor requests can now intentionally change post and term slugs
+- Programmatic writes without a verified admin/editor context remain locked unless explicitly allowed
 
 ### 1.4.2
 - Docs: expanded the WordPress-standard `readme.txt` so the published ZIP now includes fuller behavior, installation, use-case, and Devenia link sections

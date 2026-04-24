@@ -4,14 +4,15 @@ Tags: security, hardening, slugs
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Freeze existing post and taxonomy slugs unless explicitly unlocked.
 
 == Description ==
-URL Change Lockdown blocks slug changes on existing posts and taxonomy terms unless explicitly allowed.
+URL Change Lockdown blocks programmatic slug changes on existing posts and taxonomy terms unless explicitly allowed.
+Authorized human edits from the WordPress admin/editor UI can still intentionally change slugs.
 It does not lock links in post content and does not lock post meta values.
 
 To allow slug changes temporarily, define one of these constants in wp-config.php:
@@ -22,7 +23,7 @@ To allow slug changes temporarily, define one of these constants in wp-config.ph
 
 * Keep existing post and taxonomy URLs stable during imports or sync jobs
 * Prevent accidental slug changes during programmatic updates
-* Let editors update content while keeping established slugs frozen
+* Let editors intentionally change slugs in the WordPress admin/editor UI
 * Require an explicit unlock step before permalink-related changes happen
 
 == Installation ==
@@ -36,13 +37,13 @@ To allow slug changes temporarily, define one of these constants in wp-config.ph
 
 == Frequently Asked Questions ==
 = How do I allow a slug change? =
-Define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
+Use the WordPress admin/editor UI with an account that can edit the post or term. For programmatic changes, define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
 
 = Does this block manual updates in wp-admin? =
-Yes. Existing post and taxonomy slugs are kept unchanged unless an allow constant is set.
+No. Authorized manual edits in wp-admin/the editor can intentionally change slugs.
 
 = Does it block post/page slugs and taxonomy slugs? =
-Yes. Slug changes are blocked unless explicitly allowed.
+Yes for programmatic writes. Human admin/editor slug changes are allowed for users with the relevant capability.
 
 = Does it block links in post content? =
 No. Content links are not locked by this plugin.
@@ -51,6 +52,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 1.4.3 =
+- Fixed manual editing: authorized wp-admin/editor requests can now intentionally change post and term slugs.
+- Programmatic writes without a verified admin/editor context remain locked unless explicitly allowed.
 = 1.4.2 =
 - Docs: expanded the WordPress-standard `readme.txt` so the published ZIP now includes fuller behavior, installation, use-case, and Devenia link sections
 = 1.4.1 =
@@ -78,6 +82,8 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 1.4.3 =
+Manual slug edits in wp-admin/the editor now work for authorized users; programmatic slug changes remain locked by default.
 = 1.4.1 =
 Existing slugs are now explicitly frozen unless unlocked; content URLs remain outside plugin scope.
 = 1.4.0 =
