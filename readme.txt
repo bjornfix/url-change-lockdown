@@ -1,49 +1,52 @@
 === URL Change Lockdown ===
 Contributors: basicus
-Tags: security, hardening, slugs
-Requires at least: 5.9
-Tested up to: 6.9
+Tags: security, hardening, permalinks
+Requires at least: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.3
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Freeze existing post and taxonomy slugs unless explicitly unlocked.
+Preserve established public routes and migrate them only through an explicit, audited workflow.
 
 == Description ==
-URL Change Lockdown blocks programmatic slug changes on existing posts and taxonomy terms unless explicitly allowed.
-Authorized human edits from the WordPress admin/editor UI can still intentionally change slugs.
-It does not lock links in post content and does not lock post meta values.
+URL Change Lockdown establishes a Canonical Route Contract for public posts,
+pages and taxonomy terms. Ordinary editor, REST, MCP, import, WP-CLI and plugin
+writes preserve post slugs, page hierarchy, term slugs and term hierarchy.
 
-To allow slug changes temporarily, define one of these constants in wp-config.php:
-- URL_LOCKDOWN_ALLOW
-- URL_LOCKDOWN_ALLOW_CLI (for WP-CLI)
+Necessary URL corrections use separate preview and migration abilities. A
+migration requires a concrete reason and matching confirmation, shows affected
+child routes, creates permanent Rank Math redirects, verifies the observed
+route, records audit evidence, and rolls back if redirects cannot be created.
+Site-wide permalink, category-base and tag-base settings are locked against
+ordinary updates because changing them moves many public URLs at once.
 
 = Use Cases =
 
 * Keep existing post and taxonomy URLs stable during imports or sync jobs
-* Prevent accidental slug changes during programmatic updates
-* Let editors intentionally change slugs in the WordPress admin/editor UI
-* Require an explicit unlock step before permalink-related changes happen
+* Prevent accidental slug and hierarchy changes from every normal write path
+* Audit established routes against current observed WordPress permalinks
+* Migrate genuinely incorrect URLs with preview, confirmation and redirects
 
 == Installation ==
 1. Upload the plugin folder to /wp-content/plugins/.
 2. Activate the plugin in WordPress.
-3. (Optional) Define URL_LOCKDOWN_ALLOW or URL_LOCKDOWN_ALLOW_CLI in wp-config.php.
+3. Use the read-only audit ability to verify Canonical Route Contracts.
 
 = Links =
 * [GitHub Releases](https://github.com/bjornfix/url-change-lockdown/releases)
 * [Devenia Plugins](https://devenia.com/plugins/)
 
 == Frequently Asked Questions ==
-= How do I allow a slug change? =
-Use the WordPress admin/editor UI with an account that can edit the post or term. For programmatic changes, define URL_LOCKDOWN_ALLOW in wp-config.php, perform the change, then remove the constant.
+= How do I correct a genuinely wrong URL? =
+Use the preview ability, review the complete old/new route and affected descendants, then submit the returned confirmation with a concrete reason to the matching migration ability.
 
-= Does this block manual updates in wp-admin? =
-No. Authorized manual edits in wp-admin/the editor can intentionally change slugs.
+= Does this block manual URL changes in wp-admin? =
+Yes. Editing content remains normal, but established public routes use the same protection regardless of which writer initiated the save.
 
-= Does it block post/page slugs and taxonomy slugs? =
-Yes for programmatic writes. Human admin/editor slug changes are allowed for users with the relevant capability.
+= What route values are protected? =
+Post/page slugs, page hierarchy, taxonomy slugs, taxonomy hierarchy, permalink structure, category base and tag base.
 
 = Does it block links in post content? =
 No. Content links are not locked by this plugin.
@@ -52,6 +55,13 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.0 =
+- Added immutable-by-default Canonical Route Contracts for public posts, pages and taxonomy terms.
+- Protected hierarchy and site permalink drivers as well as slugs, across editor, REST, MCP, import and WP-CLI writes.
+- Added read-only route auditing and explicit post/page and taxonomy URL Migration abilities.
+- Added migration previews, affected-descendant evidence, permanent Rank Math redirects, rollback and bounded audit history.
+- Removed broad constants and automatic wp-admin bypasses from ordinary save paths.
+
 = 1.4.3 =
 - Fixed manual editing: authorized wp-admin/editor requests can now intentionally change post and term slugs.
 - Programmatic writes without a verified admin/editor context remain locked unless explicitly allowed.
@@ -82,6 +92,8 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 2.0.0 =
+Public routes are now stable across all ordinary write paths. Use the explicit preview and migration abilities for necessary URL corrections.
 = 1.4.3 =
 Manual slug edits in wp-admin/the editor now work for authorized users; programmatic slug changes remain locked by default.
 = 1.4.1 =

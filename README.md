@@ -8,13 +8,13 @@ Freezes existing post and taxonomy slugs unless explicitly unlocked.
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.0
-**Stable tag:** 1.4.3
+**Stable tag:** 2.0.0
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
 ## What It Does
 
-Freezes existing post and taxonomy slugs unless explicitly unlocked.
+Preserves established public WordPress routes and provides an explicit, audited migration workflow for necessary corrections.
 
 This is a small WordPress maintenance plugin built for a specific operational problem. It stays focused so the behavior is easy to understand, verify, and keep enabled.
 
@@ -25,9 +25,9 @@ This is a small WordPress maintenance plugin built for a specific operational pr
 In practice, the useful path is simple:
 
 1. install and activate the plugin
-2. leave existing slugs locked by default
-3. use the documented allow constant only when a rename is intentional
-4. verify established URLs after imports or programmatic updates
+2. let it establish Canonical Route Contracts for public content
+3. audit contracts against observed WordPress routes
+4. use preview plus explicit URL Migration only when a public URL must change
 
 The human's job is to decide whether the behavior fits the site.
 The plugin's job is to apply that behavior consistently.
@@ -92,14 +92,23 @@ If you are new to the plugin, use this order:
 
 ## Behavior
 
-- Freezes existing post slugs (`post_name`) on programmatic update unless explicitly unlocked
-- Freezes existing taxonomy term slugs on programmatic update unless explicitly unlocked
-- Allows authorized human edits from the WordPress admin/editor UI
+- Freezes established post/page slugs and page hierarchy on every ordinary update path
+- Freezes established taxonomy slugs and hierarchy
+- Locks permalink structure, category base and tag base against ordinary changes
+- Applies the same invariant to wp-admin, REST, MCP, imports, WP-CLI and plugin writes
+- Exposes route audit, migration preview and explicit confirmed migration abilities
+- Creates permanent Rank Math redirects, verifies results and records bounded audit evidence
 - Does not lock links inside post content
 - Does not lock post meta values
 - Supports temporary allow constants when you intentionally need to rename slugs
 
 ## Changelog
+
+### 2.0.0
+- Added Canonical Route Contracts and stable public routes across every ordinary writer.
+- Added hierarchy and global permalink-driver protection.
+- Added audited, confirmation-gated post/page and taxonomy URL migrations with descendant previews, permanent redirects and rollback.
+- Removed automatic wp-admin and constant-based bypasses.
 
 ### 1.4.3
 - Fixed manual editing: authorized wp-admin/editor requests can now intentionally change post and term slugs
