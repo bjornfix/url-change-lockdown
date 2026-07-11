@@ -8,7 +8,7 @@ Freezes existing post and taxonomy slugs unless explicitly unlocked.
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.0
-**Stable tag:** 2.0.0
+**Stable tag:** 2.0.1
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,6 +103,9 @@ If you are new to the plugin, use this order:
 - Supports temporary allow constants when you intentionally need to rename slugs
 
 ## Changelog
+
+### 2.0.1
+- Added explicit dangerous-action confirmation fields to the post and taxonomy migration schemas for strict MCP compatibility.
 
 ### 2.0.0
 - Added Canonical Route Contracts and stable public routes across every ordinary writer.

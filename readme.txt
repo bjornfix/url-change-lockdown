@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.1 =
+- Added the explicit MCP dangerous-action confirmation property to both migration schemas so the confirmation gate and strict input validation work together.
+
 = 2.0.0 =
 - Added immutable-by-default Canonical Route Contracts for public posts, pages and taxonomy terms.
 - Protected hierarchy and site permalink drivers as well as slugs, across editor, REST, MCP, import and WP-CLI writes.
@@ -92,6 +95,9 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 2.0.1 =
+Required compatibility fix for confirmed URL migrations through MCP.
+
 = 2.0.0 =
 Public routes are now stable across all ordinary write paths. Use the explicit preview and migration abilities for necessary URL corrections.
 = 1.4.3 =
