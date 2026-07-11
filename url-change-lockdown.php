@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.1
+ * Version: 2.0.2
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -221,10 +221,10 @@ function url_change_lockdown_create_redirect( string $old_path, string $new_url 
 	}
 	$redirection = \RankMath\Redirections\Redirection::from(
 		array(
-			'sources'     => array( array( 'pattern' => ltrim( $old_path, '/' ), 'comparison' => 'exact' ) ),
+			'sources'     => array( array( 'pattern' => ltrim( $old_path, '/' ), 'comparison' => 'exact', 'ignore' => '' ) ),
 			'url_to'      => $new_url,
 			'header_code' => 301,
-			'set_active'  => true,
+			'status'      => 'active',
 		)
 	);
 	$id = $redirection->save();

@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.2 =
+- Fixed the Rank Math redirect adapter to use the required active status and normalized exact-source structure; failed migrations continue to roll back safely.
+
 = 2.0.1 =
 - Added the explicit MCP dangerous-action confirmation property to both migration schemas so the confirmation gate and strict input validation work together.
 
@@ -95,6 +98,9 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 2.0.2 =
+Required adapter fix for permanent redirect creation during an explicitly confirmed URL migration.
+
 = 2.0.1 =
 Required compatibility fix for confirmed URL migrations through MCP.
 
