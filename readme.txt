@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.3 =
+- Added a fail-closed migration-finalization seam so adapters can remove conflicting self-redirects before a migration is committed; failed finalization restores the old route and removes newly created redirects.
+
 = 2.0.2 =
 - Fixed the Rank Math redirect adapter to use the required active status and normalized exact-source structure; failed migrations continue to roll back safely.
 
@@ -98,6 +101,9 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 2.0.3 =
+Adds fail-closed finalization for redirect and canonical-route conflicts.
+
 = 2.0.2 =
 Required adapter fix for permanent redirect creation during an explicitly confirmed URL migration.
 

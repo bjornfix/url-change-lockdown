@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.2
+ * Version: 2.0.3
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -373,8 +373,20 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 		}
 		$redirects[] = (int) $redirect_id;
 	}
+	$finalization = apply_filters( 'url_lockdown_finalize_post_migration', array( 'success' => true ), $post_id );
+	if ( ! is_array( $finalization ) || empty( $finalization['success'] ) ) {
+		$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] = true;
+		wp_update_post( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ) );
+		unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] );
+		if ( $redirects && class_exists( '\\RankMath\\Redirections\\DB' ) ) {
+			\RankMath\Redirections\DB::delete( $redirects );
+		}
+		url_change_lockdown_store_post_contract( $post_id, true );
+		return array( 'success' => false, 'code' => 'migration_finalization_failed_rolled_back', 'message' => (string) ( $finalization['message'] ?? 'Migration finalization failed; the old route was restored.' ), 'finalization' => $finalization );
+	}
 	$contract = url_change_lockdown_store_post_contract( $post_id, true );
 	$audit = array( 'migrated_at' => gmdate( 'c' ), 'actor_user_id' => get_current_user_id(), 'reason' => $reason, 'old_route' => $preview['old_route'], 'new_route' => $contract, 'affected_children' => $preview['affected_children'], 'redirect_ids' => $redirects );
+	$audit['finalization'] = $finalization;
 	url_change_lockdown_append_audit( $audit );
 	do_action( 'url_lockdown_public_route_migrated', $post_id, $preview['old_route'], $contract, $audit );
 	return array( 'success' => true, 'message' => 'Public route migrated and permanent redirects created.', 'migration' => $audit );
