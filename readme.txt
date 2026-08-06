@@ -35,7 +35,7 @@ ordinary updates because changing them moves many public URLs at once.
 3. Use the read-only audit ability to verify Canonical Route Contracts.
 
 = Links =
-* [GitHub Releases](https://github.com/bjornfix/url-change-lockdown/releases)
+* [Stable plugin download](https://downloads.devenia.com/url-change-lockdown.zip)
 * [Devenia Plugins](https://devenia.com/plugins/)
 
 == Frequently Asked Questions ==

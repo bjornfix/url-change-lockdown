@@ -2,7 +2,7 @@
 
 Freezes existing post and taxonomy slugs unless explicitly unlocked.
 
-[![GitHub release](https://img.shields.io/github/v/release/bjornfix/url-change-lockdown)](https://github.com/bjornfix/url-change-lockdown/releases)
+[![Release 2.0.3](https://img.shields.io/badge/release-2.0.3-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-blue.svg)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
@@ -79,13 +79,14 @@ This is a good fit for:
 Start with the public plugin page:
 
 - [Plugin Page](https://devenia.com/plugins/url-change-lockdown/)
+- [Stable plugin download](https://downloads.devenia.com/url-change-lockdown.zip)
 
 ## Start Here
 
 If you are new to the plugin, use this order:
 
 1. Read the plugin page
-2. Download the latest release
+2. Download the stable plugin package
 3. Install it on WordPress
 4. Verify the expected behavior
 5. Keep it active if the behavior matches the site
@@ -157,10 +158,6 @@ If you are new to the plugin, use this order:
 ### 1.0.0
 - Initial release
 
-## Contributing
-
-PRs welcome. Keep changes focused on the plugin's stated WordPress maintenance behavior.
-
 ## License
 
 GPL-2.0+
@@ -172,17 +169,5 @@ GPL-2.0+
 ## Links
 
 - [Plugin Page](https://devenia.com/plugins/url-change-lockdown/)
-- [GitHub Releases](https://github.com/bjornfix/url-change-lockdown/releases)
+- [Stable plugin download](https://downloads.devenia.com/url-change-lockdown.zip)
 - [Devenia Plugins](https://devenia.com/plugins/)
-
-## Star and Share
-
-If this plugin helps solve a real WordPress maintenance problem, please:
-
-- star the repo
-- share it with people running WordPress sites
-- point them to the plugin page so they can see what it does
-
-Why do it?
-
-Because practical WordPress maintenance tools are better when they are easy to find, easy to understand, and easy to verify before use.
