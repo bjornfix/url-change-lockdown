@@ -150,8 +150,8 @@ function url_change_lockdown_guard_permalink_option( $new_value, $old_value ) {
 	return ! empty( $GLOBALS['url_change_lockdown_migration_scope']['site:permalinks'] ) ? $new_value : $old_value;
 }
 
-function url_change_lockdown_capture_published_post( int $post_id, WP_Post $post ): void {
-	if ( ! wp_is_post_revision( $post_id ) ) {
+function url_change_lockdown_capture_published_post( int $post_id, $post ): void {
+	if ( $post instanceof WP_Post && ! wp_is_post_revision( $post_id ) ) {
 		url_change_lockdown_store_post_contract( $post_id );
 	}
 }
