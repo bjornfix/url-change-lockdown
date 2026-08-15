@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.3
+ * Version: 2.0.4
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -211,6 +211,40 @@ function url_change_lockdown_preview_post_migration( int $post_id, string $new_s
 	return array( 'success' => true, 'object_id' => $post_id, 'old_route' => $old_route, 'proposed_route' => $new_route, 'affected_children' => $affected, 'confirmation' => hash( 'sha256', wp_json_encode( array( $post_id, $old_route, $new_route, $affected ) ) ) );
 }
 
+/** Preview retiring one public post route to another existing public post. */
+function url_change_lockdown_preview_post_retirement( int $source_post_id, int $target_post_id ): array {
+	$source = get_post( $source_post_id );
+	$target = get_post( $target_post_id );
+	if ( ! $source || ! url_change_lockdown_is_post_public( $source ) ) {
+		return array( 'success' => false, 'code' => 'public_source_post_not_found', 'message' => 'Published public source post or page not found.' );
+	}
+	if ( ! $target || ! url_change_lockdown_is_post_public( $target ) ) {
+		return array( 'success' => false, 'code' => 'public_target_post_not_found', 'message' => 'Published public target post or page not found.' );
+	}
+	if ( $source_post_id === $target_post_id ) {
+		return array( 'success' => false, 'code' => 'same_post', 'message' => 'A public route cannot retire to itself.' );
+	}
+	if ( url_change_lockdown_descendant_routes( $source_post_id ) ) {
+		return array( 'success' => false, 'code' => 'source_has_public_children', 'message' => 'Retire public child routes before retiring their parent route.' );
+	}
+	if ( in_array( $source_post_id, get_post_ancestors( $target_post_id ), true ) ) {
+		return array( 'success' => false, 'code' => 'target_is_descendant', 'message' => 'A public route cannot retire to one of its descendants.' );
+	}
+	$old_route    = url_change_lockdown_post_route( $source );
+	$target_route = url_change_lockdown_post_route( $target );
+	if ( '' === $old_route['path'] || '' === $target_route['path'] || $old_route['path'] === $target_route['path'] ) {
+		return array( 'success' => false, 'code' => 'invalid_route_pair', 'message' => 'Source and target must have distinct public routes.' );
+	}
+	return array(
+		'success'        => true,
+		'source_post_id' => $source_post_id,
+		'target_post_id' => $target_post_id,
+		'old_route'      => $old_route,
+		'target_route'   => $target_route,
+		'confirmation'   => hash( 'sha256', wp_json_encode( array( $source_post_id, $target_post_id, $old_route, $target_route ) ) ),
+	);
+}
+
 function url_change_lockdown_create_redirect( string $old_path, string $new_url ) {
 	$result = apply_filters( 'url_change_lockdown_create_redirect', null, $old_path, $new_url );
 	if ( null !== $result ) {
@@ -318,6 +352,66 @@ function url_change_lockdown_append_audit( array $row ): void {
 		$rows = array_slice( $rows, -500 );
 	}
 	update_option( URL_CHANGE_LOCKDOWN_AUDIT_OPTION, $rows, false );
+}
+
+/** Retire one confirmed public post route to an existing canonical public post. */
+function url_change_lockdown_execute_post_retirement( array $input ): array {
+	$source_post_id = absint( $input['source_post_id'] ?? 0 );
+	$target_post_id = absint( $input['target_post_id'] ?? 0 );
+	$reason         = sanitize_textarea_field( (string) ( $input['reason'] ?? '' ) );
+	$confirm        = (string) ( $input['confirmation'] ?? '' );
+	if ( mb_strlen( trim( $reason ) ) < 12 ) {
+		return array( 'success' => false, 'code' => 'reason_required', 'message' => 'A concrete retirement reason of at least 12 characters is required.' );
+	}
+	$preview = url_change_lockdown_preview_post_retirement( $source_post_id, $target_post_id );
+	if ( empty( $preview['success'] ) || ! hash_equals( (string) ( $preview['confirmation'] ?? '' ), $confirm ) ) {
+		return array( 'success' => false, 'code' => 'confirmation_mismatch', 'message' => 'Retirement confirmation does not match the current preview.', 'preview' => $preview );
+	}
+
+	url_change_lockdown_store_post_contract( $source_post_id );
+	url_change_lockdown_store_post_contract( $target_post_id );
+	$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] = true;
+	$result = wp_update_post( array( 'ID' => $source_post_id, 'post_status' => 'draft' ), true );
+	unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] );
+	if ( is_wp_error( $result ) ) {
+		return array( 'success' => false, 'code' => 'source_retirement_failed', 'message' => $result->get_error_message() );
+	}
+
+	$source = get_post( $source_post_id );
+	$target = get_post( $target_post_id );
+	$target_route = $target && url_change_lockdown_is_post_public( $target ) ? url_change_lockdown_post_route( $target ) : array();
+	if ( ! $source || url_change_lockdown_is_post_public( $source ) || $target_route !== $preview['target_route'] ) {
+		$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] = true;
+		wp_update_post( array( 'ID' => $source_post_id, 'post_status' => 'publish' ), true );
+		unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] );
+		return array( 'success' => false, 'code' => 'retirement_verification_failed_rolled_back', 'message' => 'Observed source or target state did not match the confirmed retirement; the source post was restored.' );
+	}
+
+	$redirect_id = url_change_lockdown_create_redirect( (string) $preview['old_route']['path'], (string) $preview['target_route']['url'] );
+	if ( is_wp_error( $redirect_id ) ) {
+		$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] = true;
+		$rollback = wp_update_post( array( 'ID' => $source_post_id, 'post_status' => 'publish' ), true );
+		unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $source_post_id ] );
+		$restored_source = get_post( $source_post_id );
+		if ( is_wp_error( $rollback ) || ! $restored_source || ! url_change_lockdown_is_post_public( $restored_source ) ) {
+			return array( 'success' => false, 'code' => 'redirect_creation_failed_rollback_failed', 'message' => $redirect_id->get_error_message() );
+		}
+		return array( 'success' => false, 'code' => 'redirect_creation_failed_rolled_back', 'message' => $redirect_id->get_error_message() );
+	}
+
+	$audit = array(
+		'operation'       => 'post_route_retired',
+		'migrated_at'     => gmdate( 'c' ),
+		'actor_user_id'   => get_current_user_id(),
+		'reason'          => $reason,
+		'old_route'       => $preview['old_route'],
+		'target_route'    => $preview['target_route'],
+		'source_status'   => 'draft',
+		'redirect_id'     => (int) $redirect_id,
+	);
+	url_change_lockdown_append_audit( $audit );
+	do_action( 'url_lockdown_public_route_retired', $source_post_id, $target_post_id, $audit );
+	return array( 'success' => true, 'message' => 'Public route retired to the canonical target with a permanent redirect.', 'retirement' => $audit );
 }
 
 function url_change_lockdown_execute_post_migration( array $input ): array {
@@ -429,6 +523,8 @@ function url_change_lockdown_register_abilities(): void {
 	wp_register_ability( 'url-lockdown/audit', array( 'label' => 'Audit canonical routes', 'description' => 'Compare established Canonical Route Contracts with current observed public routes.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'properties' => array( 'limit' => array( 'type' => 'integer', 'minimum' => 1, 'maximum' => 500 ), 'offset' => array( 'type' => 'integer', 'minimum' => 0 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_audit', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
 	wp_register_ability( 'url-lockdown/preview-post-migration', array( 'label' => 'Preview post URL migration', 'description' => 'Preview a public post/page URL migration and all affected child routes.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_post_migration( absint( $input['post_id'] ?? 0 ), (string) ( $input['new_slug'] ?? '' ), array_key_exists( 'new_parent_id', $input ) ? absint( $input['new_parent_id'] ) : -1 ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
 	wp_register_ability( 'url-lockdown/migrate-post-route', array( 'label' => 'Migrate post URL', 'description' => 'Explicitly migrate a confirmed public post/page route, create permanent redirects, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug', 'reason', 'confirmation' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-post-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_post_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
+	wp_register_ability( 'url-lockdown/preview-post-retirement', array( 'label' => 'Preview post URL retirement', 'description' => 'Preview retiring one public post/page route to another existing public post/page.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'source_post_id', 'target_post_id' ), 'properties' => array( 'source_post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'target_post_id' => array( 'type' => 'integer', 'minimum' => 1 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_post_retirement( absint( $input['source_post_id'] ?? 0 ), absint( $input['target_post_id'] ?? 0 ) ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
+	wp_register_ability( 'url-lockdown/retire-post-route', array( 'label' => 'Retire post URL', 'description' => 'Retire one confirmed public post/page route to an existing canonical post/page, create a permanent redirect, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'source_post_id', 'target_post_id', 'reason', 'confirmation' ), 'properties' => array( 'source_post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'target_post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/retire-post-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_post_retirement', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
 	wp_register_ability( 'url-lockdown/preview-term-migration', array( 'label' => 'Preview term URL migration', 'description' => 'Preview a taxonomy-term URL migration and affected descendants.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'term_id', 'taxonomy', 'new_slug' ), 'properties' => array( 'term_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'taxonomy' => array( 'type' => 'string' ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_term_migration( absint( $input['term_id'] ?? 0 ), sanitize_key( (string) ( $input['taxonomy'] ?? '' ) ), (string) ( $input['new_slug'] ?? '' ), array_key_exists( 'new_parent_id', $input ) ? absint( $input['new_parent_id'] ) : -1 ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
 	wp_register_ability( 'url-lockdown/migrate-term-route', array( 'label' => 'Migrate term URL', 'description' => 'Explicitly migrate a confirmed taxonomy route, create permanent redirects, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'term_id', 'taxonomy', 'new_slug', 'reason', 'confirmation' ), 'properties' => array( 'term_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'taxonomy' => array( 'type' => 'string' ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-term-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_term_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
 }

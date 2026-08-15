@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.3
+Stable tag: 2.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,8 @@ Necessary URL corrections use separate preview and migration abilities. A
 migration requires a concrete reason and matching confirmation, shows affected
 child routes, creates permanent Rank Math redirects, verifies the observed
 route, records audit evidence, and rolls back if redirects cannot be created.
+Duplicate post routes can also be retired to an existing canonical public post
+with the same preview, confirmation, redirect, audit, and rollback controls.
 Site-wide permalink, category-base and tag-base settings are locked against
 ordinary updates because changing them moves many public URLs at once.
 
@@ -55,6 +57,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.4 =
+- Added confirmed post-route retirement to an existing canonical public post, with rollback when redirect creation fails.
+
 = 2.0.3 =
 - Added a fail-closed migration-finalization seam so adapters can remove conflicting self-redirects before a migration is committed; failed finalization restores the old route and removes newly created redirects.
 
@@ -101,6 +106,9 @@ No. Post meta values are not locked by this plugin.
 - Initial release.
 
 == Upgrade Notice ==
+= 2.0.4 =
+Adds audited retirement of one public post route to an existing canonical post.
+
 = 2.0.3 =
 Adds fail-closed finalization for redirect and canonical-route conflicts.
 

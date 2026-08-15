@@ -2,13 +2,13 @@
 
 Freezes existing post and taxonomy slugs unless explicitly unlocked.
 
-[![Release 2.0.3](https://img.shields.io/badge/release-2.0.3-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
+[![Release 2.0.4](https://img.shields.io/badge/release-2.0.4-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-blue.svg)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.0
-**Stable tag:** 2.0.3
+**Stable tag:** 2.0.4
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,12 +98,16 @@ If you are new to the plugin, use this order:
 - Locks permalink structure, category base and tag base against ordinary changes
 - Applies the same invariant to wp-admin, REST, MCP, imports, WP-CLI and plugin writes
 - Exposes route audit, migration preview and explicit confirmed migration abilities
+- Retires a duplicate public route to an existing canonical post with preview, confirmation, one permanent redirect and audit evidence
 - Creates permanent Rank Math redirects, verifies results and records bounded audit evidence
 - Does not lock links inside post content
 - Does not lock post meta values
 - Supports temporary allow constants when you intentionally need to rename slugs
 
 ## Changelog
+
+### 2.0.4
+- Added confirmed post-route retirement to an existing canonical public post, with rollback when redirect creation fails.
 
 ### 2.0.3
 - Added fail-closed migration finalization so route-specific adapters can remove self-redirect conflicts or force a full rollback.
