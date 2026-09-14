@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.5
+ * Version: 2.0.6
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
