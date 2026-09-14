@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.4
+Stable tag: 2.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,7 +38,7 @@ ordinary updates because changing them moves many public URLs at once.
 
 = Links =
 * [Stable plugin download](https://downloads.devenia.com/url-change-lockdown.zip)
-* [Devenia Plugins](https://devenia.com/plugins/)
+* [Plugin documentation](https://devenia.com/plugins/url-change-lockdown/)
 
 == Frequently Asked Questions ==
 = How do I correct a genuinely wrong URL? =
@@ -57,6 +57,11 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+= 2.0.5 =
+- Added confirmed derived-route recording for routing integrations and optional preservation of translated posts-page paths.
+- Corrected same-site destination validation to compare the origin and installation path.
+- Fixed taxonomy migration previews to use native WordPress links for the proposed term and descendants, including language and hierarchy changes, without modifying stored terms.
+
 = 2.0.4 =
 - Added confirmed post-route retirement to an existing canonical public post, with rollback when redirect creation fails.
 
