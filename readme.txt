@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.6
+Stable tag: 2.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,8 @@ ordinary updates because changing them moves many public URLs at once.
 * Migrate genuinely incorrect URLs with preview, confirmation and redirects
 
 == Installation ==
+
+For update notifications in WordPress, install [Devenia MCP Updater](https://downloads.devenia.com/devenia-mcp-updater.zip). The updater is optional. You choose which plugins update automatically through WordPress.
 1. Upload the plugin folder to /wp-content/plugins/.
 2. Activate the plugin in WordPress.
 3. Use the read-only audit ability to verify Canonical Route Contracts.
@@ -57,6 +59,9 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+
+= 2.0.7 =
+* Add one dismissible Plugins-screen reminder when Devenia MCP Updater is missing or inactive, with persistent install or activate links. Automatic updates remain your choice in WordPress.
 = 2.0.6 =
 - Added confirmed derived-route recording for routing integrations and optional preservation of translated posts-page paths.
 - Corrected same-site destination validation to compare the origin and installation path.

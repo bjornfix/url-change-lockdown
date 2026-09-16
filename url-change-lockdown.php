@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.6
+ * Version: 2.0.7
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -15,6 +15,9 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+require_once __DIR__ . '/includes/devenia-updater-notice.php';
+url_change_lockdown_Updater_Notice::register( __FILE__ );
 
 const URL_CHANGE_LOCKDOWN_POST_CONTRACT_META = '_url_change_lockdown_canonical_route_v1';
 const URL_CHANGE_LOCKDOWN_TERM_CONTRACT_META = '_url_change_lockdown_term_canonical_route_v1';

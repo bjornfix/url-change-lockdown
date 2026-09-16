@@ -2,13 +2,13 @@
 
 Keep published WordPress addresses stable while editing content. When an address must change, preview the new route and move it through a confirmed migration with permanent redirects.
 
-[![Version 2.0.6](https://img.shields.io/badge/version-2.0.6-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
+[![Version 2.0.7](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-blue.svg)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.1
-**Stable tag:** 2.0.6
+**Stable tag:** 2.0.7
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,11 @@ Maintained by [basicus](https://profiles.wordpress.org/basicus/). See the [plugi
 
 ## Changelog
 
+
+### 2.0.7
+
+Add one dismissible Plugins-screen reminder when Devenia MCP Updater is missing or inactive, with persistent install or activate links. Automatic updates remain your choice in WordPress.
+
 ### 2.0.6
 - Added confirmed derived-route recording for routing integrations and optional preservation of translated posts-page paths.
 - Corrected same-site destination validation to compare the origin and installation path.
@@ -188,3 +193,8 @@ GPL-2.0+
 - [Plugin Page](https://devenia.com/plugins/url-change-lockdown/)
 - [Stable plugin download](https://downloads.devenia.com/url-change-lockdown.zip)
 - [Devenia Plugins](https://devenia.com/plugins/)
+
+
+## Update notifications
+
+For update notifications in WordPress, install [Devenia MCP Updater](https://downloads.devenia.com/devenia-mcp-updater.zip). The updater is optional. You choose which plugins update automatically through WordPress.
