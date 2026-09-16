@@ -16,8 +16,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once __DIR__ . '/includes/devenia-updater-notice.php';
-url_change_lockdown_Updater_Notice::register( __FILE__ );
+add_action( 'admin_init', static function () {
+	require_once __DIR__ . '/includes/devenia-updater-notice.php';
+	url_change_lockdown_Updater_Notice::register( __FILE__ );
+} );
 
 const URL_CHANGE_LOCKDOWN_POST_CONTRACT_META = '_url_change_lockdown_canonical_route_v1';
 const URL_CHANGE_LOCKDOWN_TERM_CONTRACT_META = '_url_change_lockdown_term_canonical_route_v1';
