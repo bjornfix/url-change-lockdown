@@ -4,30 +4,37 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.7
+Stable tag: 2.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Preserve established public routes and migrate them only through an explicit, audited workflow.
+Protect public routes from automated changes while allowing authorized manual URL corrections.
 
 == Description ==
 URL Change Lockdown establishes a Canonical Route Contract for public posts,
-pages and taxonomy terms. Ordinary editor, REST, MCP, import, WP-CLI and plugin
+pages and taxonomy terms. Machine REST, MCP, background import, WP-CLI and plugin
 writes preserve post slugs, page hierarchy, term slugs and term hierarchy.
+Authorized browser edits through wp-admin, AJAX and the block editor can change
+routes. Saved manual changes become the new reference, including completed
+Permalink Manager post-URI saves. Each editor owns its normal form validation.
 
-Necessary URL corrections use separate preview and migration abilities. A
+Automated URL corrections use separate preview and migration abilities. A
 migration requires a concrete reason and matching confirmation, shows affected
 child routes, creates permanent Rank Math redirects, verifies the observed
 route, records audit evidence, and rolls back if redirects cannot be created.
 Duplicate post routes can also be retired to an existing canonical public post
 with the same preview, confirmation, redirect, audit, and rollback controls.
 Site-wide permalink, category-base and tag-base settings are locked against
-ordinary updates because changing them moves many public URLs at once.
+machine updates because changing them moves many public URLs at once.
+Authorized browser saves can change these settings and refresh the references.
+Manual saves use the editor's redirect behavior and do not require Rank Math.
+Direct database writes and custom-URI storage remain owned by their plugins.
 
 = Use Cases =
 
 * Keep existing post and taxonomy URLs stable during imports or sync jobs
-* Prevent accidental slug and hierarchy changes from every normal write path
+* Prevent accidental slug and hierarchy changes from machine write paths
+* Correct URLs manually without disabling protection for machine writes
 * Audit established routes against current observed WordPress permalinks
 * Migrate genuinely incorrect URLs with preview, confirmation and redirects
 
@@ -44,10 +51,10 @@ For update notifications in WordPress, install [Devenia MCP Updater](https://dow
 
 == Frequently Asked Questions ==
 = How do I correct a genuinely wrong URL? =
-Use the preview ability, review the complete old/new route and affected descendants, then submit the returned confirmation with a concrete reason to the matching migration ability.
+Save the correction through an authorized WordPress browser editor or Permalink Manager. For automated changes with redirects, use the preview ability, review the old/new route and affected descendants, then submit its confirmation with a concrete reason to the matching migration ability.
 
 = Does this block manual URL changes in wp-admin? =
-Yes. Editing content remains normal, but established public routes use the same protection regardless of which writer initiated the save.
+No. A valid logged-in browser session and permission to edit the object allow manual saves. Admin context or administrator permissions alone do not unlock machine writes. Browser-session detection identifies the request context, not whether a person or browser automation clicked Save.
 
 = What route values are protected? =
 Post/page slugs, page hierarchy, taxonomy slugs, taxonomy hierarchy, permalink structure, category base and tag base.
@@ -59,6 +66,11 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+
+= 2.0.8 =
+* Restore authorized browser URL edits without a separate migration request.
+* Keep machine writes protected and refresh route references after manual post, term and permalink-setting saves.
+* Capture completed Permalink Manager post-URI changes.
 
 = 2.0.7 =
 * Add one dismissible Plugins-screen reminder when Devenia MCP Updater is missing or inactive, with persistent install or activate links. Automatic updates remain your choice in WordPress.

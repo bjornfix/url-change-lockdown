@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.7
+ * Version: 2.0.8
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -110,9 +110,35 @@ function url_change_lockdown_in_migration_scope( string $type, int $id ): bool {
 	return ! empty( $GLOBALS['url_change_lockdown_migration_scope'][ $type . ':' . $id ] );
 }
 
+/**
+ * Recognize authenticated editor requests; the owning handler validates its form.
+ *
+ * Admin/AJAX context or a privileged user alone does not establish a browser
+ * session. Application passwords, cron and CLI retain the machine-write policy.
+ * Do not maintain a second list of third-party form actions and nonce names.
+ */
+function url_change_lockdown_is_manual_edit( string $capability, int $object_id = 0 ): bool {
+	if ( ( defined( 'WP_CLI' ) && WP_CLI ) || wp_doing_cron() ) {
+		return false;
+	}
+	$user_id = get_current_user_id();
+	if ( ! $user_id || (int) wp_validate_auth_cookie( '', 'logged_in' ) !== $user_id ) {
+		return false;
+	}
+	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+		$nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return false;
+		}
+	} elseif ( ! is_admin() ) {
+		return false;
+	}
+	return $object_id ? current_user_can( $capability, $object_id ) : current_user_can( $capability );
+}
+
 function url_change_lockdown_guard_post_data( array $data, array $postarr ): array {
 	$post_id = isset( $postarr['ID'] ) ? absint( $postarr['ID'] ) : 0;
-	if ( ! $post_id || url_change_lockdown_in_migration_scope( 'post', $post_id ) ) {
+	if ( ! $post_id || url_change_lockdown_in_migration_scope( 'post', $post_id ) || url_change_lockdown_is_manual_edit( 'edit_post', $post_id ) ) {
 		return $data;
 	}
 	$existing = get_post( $post_id );
@@ -129,7 +155,7 @@ function url_change_lockdown_guard_post_data( array $data, array $postarr ): arr
 
 function url_change_lockdown_guard_term_data( array $data, int $term_id, string $taxonomy, array $args ): array {
 	unset( $args );
-	if ( ! $term_id || url_change_lockdown_in_migration_scope( 'term', $term_id ) ) {
+	if ( ! $term_id || url_change_lockdown_in_migration_scope( 'term', $term_id ) || url_change_lockdown_is_manual_edit( 'edit_term', $term_id ) ) {
 		return $data;
 	}
 	$existing = get_term( $term_id, $taxonomy );
@@ -142,7 +168,7 @@ function url_change_lockdown_guard_term_data( array $data, int $term_id, string 
 }
 
 function url_change_lockdown_guard_term_parent( int $parent, int $term_id, string $taxonomy ): int {
-	if ( ! $term_id || url_change_lockdown_in_migration_scope( 'term', $term_id ) ) {
+	if ( ! $term_id || url_change_lockdown_in_migration_scope( 'term', $term_id ) || url_change_lockdown_is_manual_edit( 'edit_term', $term_id ) ) {
 		return $parent;
 	}
 	$existing = get_term( $term_id, $taxonomy );
@@ -154,18 +180,51 @@ function url_change_lockdown_guard_term_parent( int $parent, int $term_id, strin
 }
 
 function url_change_lockdown_guard_permalink_option( $new_value, $old_value ) {
-	return ! empty( $GLOBALS['url_change_lockdown_migration_scope']['site:permalinks'] ) ? $new_value : $old_value;
+	return ! empty( $GLOBALS['url_change_lockdown_migration_scope']['site:permalinks'] ) || url_change_lockdown_is_manual_edit( 'manage_options' ) ? $new_value : $old_value;
 }
 
 function url_change_lockdown_capture_published_post( int $post_id, $post ): void {
 	if ( $post instanceof WP_Post && ! wp_is_post_revision( $post_id ) ) {
-		url_change_lockdown_store_post_contract( $post_id );
+		$manual = url_change_lockdown_is_manual_edit( 'edit_post', $post_id );
+		$old    = url_change_lockdown_get_post_contract( $post_id );
+		$route  = url_change_lockdown_store_post_contract( $post_id, $manual );
+		if ( $manual && $route && ( $old['path'] ?? '' ) !== $route['path'] && is_post_type_hierarchical( $post->post_type ) ) {
+			foreach ( url_change_lockdown_descendant_routes( $post_id ) as $child ) {
+				url_change_lockdown_store_post_contract( (int) $child['object_id'], true );
+			}
+		}
 	}
 }
 
 function url_change_lockdown_capture_public_term( int $term_id, int $tt_id, string $taxonomy ): void {
 	unset( $tt_id );
-	url_change_lockdown_store_term_contract( $term_id, $taxonomy );
+	$manual = url_change_lockdown_is_manual_edit( 'edit_term', $term_id );
+	$old    = url_change_lockdown_get_term_contract( $term_id );
+	$route  = url_change_lockdown_store_term_contract( $term_id, $taxonomy, $manual );
+	if ( $manual && $route && ( $old['path'] ?? '' ) !== $route['path'] ) {
+		$children = get_term_children( $term_id, $taxonomy );
+		if ( ! is_wp_error( $children ) ) {
+			foreach ( $children as $child_id ) {
+				url_change_lockdown_store_term_contract( (int) $child_id, $taxonomy, true );
+			}
+		}
+	}
+}
+
+/** Permalink Manager saves its custom route after the native post write. */
+function url_change_lockdown_capture_permalink_manager_post( int $post_id ): void {
+	url_change_lockdown_capture_published_post( $post_id, get_post( $post_id ) );
+}
+
+/** Refresh routes after WordPress has saved all site-wide permalink settings. */
+function url_change_lockdown_capture_permalink_settings( string $option ): void {
+	if ( in_array( $option, array( 'permalink_structure', 'category_base', 'tag_base' ), true ) && url_change_lockdown_is_manual_edit( 'manage_options' ) ) {
+		add_action( 'shutdown', 'url_change_lockdown_refresh_site_contracts' );
+	}
+}
+
+function url_change_lockdown_refresh_site_contracts(): void {
+	url_change_lockdown_capture_site_contracts( true );
 }
 
 function url_change_lockdown_descendant_routes( int $post_id ): array {
@@ -664,18 +723,22 @@ function url_change_lockdown_register_abilities(): void {
 	wp_register_ability( 'url-lockdown/migrate-term-route', array( 'label' => 'Migrate term URL', 'description' => 'Explicitly migrate a confirmed taxonomy route, create permanent redirects, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'term_id', 'taxonomy', 'new_slug', 'reason', 'confirmation' ), 'properties' => array( 'term_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'taxonomy' => array( 'type' => 'string' ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-term-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_term_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
 }
 
-function url_change_lockdown_activate(): void {
+function url_change_lockdown_capture_site_contracts( bool $replace = false ): void {
 	$ids = get_posts( array( 'post_type' => 'any', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids', 'suppress_filters' => false ) );
 	foreach ( $ids as $post_id ) {
-		url_change_lockdown_store_post_contract( (int) $post_id );
+		url_change_lockdown_store_post_contract( (int) $post_id, $replace );
 	}
 	foreach ( get_taxonomies( array( 'public' => true ), 'names' ) as $taxonomy ) {
 		$terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) );
 		if ( is_wp_error( $terms ) ) { continue; }
 		foreach ( $terms as $term ) {
-			url_change_lockdown_store_term_contract( (int) $term->term_id, $taxonomy );
+			url_change_lockdown_store_term_contract( (int) $term->term_id, $taxonomy, $replace );
 		}
 	}
+}
+
+function url_change_lockdown_activate(): void {
+	url_change_lockdown_capture_site_contracts();
 }
 
 add_filter( 'wp_insert_post_data', 'url_change_lockdown_guard_post_data', PHP_INT_MAX, 2 );
@@ -687,5 +750,7 @@ add_filter( 'pre_update_option_tag_base', 'url_change_lockdown_guard_permalink_o
 add_action( 'save_post', 'url_change_lockdown_capture_published_post', PHP_INT_MAX, 2 );
 add_action( 'created_term', 'url_change_lockdown_capture_public_term', 20, 3 );
 add_action( 'edited_term', 'url_change_lockdown_capture_public_term', 20, 3 );
+add_action( 'permalink_manager_updated_post_uri', 'url_change_lockdown_capture_permalink_manager_post', PHP_INT_MAX );
+add_action( 'updated_option', 'url_change_lockdown_capture_permalink_settings' );
 add_action( 'wp_abilities_api_init', 'url_change_lockdown_register_abilities' );
 register_activation_hook( __FILE__, 'url_change_lockdown_activate' );

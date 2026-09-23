@@ -1,14 +1,14 @@
 # URL Change Lockdown
 
-Keep published WordPress addresses stable while editing content. When an address must change, preview the new route and move it through a confirmed migration with permanent redirects.
+Keep published WordPress addresses stable during automated updates. Authorized browser editors can correct URLs directly; automated route changes use confirmed migrations with permanent redirects.
 
-[![Version 2.0.7](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
+[![Version 2.0.8](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-blue.svg)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.1
-**Stable tag:** 2.0.7
+**Stable tag:** 2.0.8
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,29 +16,29 @@ Keep published WordPress addresses stable while editing content. When an address
 
 ## What It Does
 
-The plugin records the established route of a public post, page or taxonomy term. Ordinary edits preserve its slug and route-bearing hierarchy, whether they come from the editor, REST, MCP, imports, WP-CLI or another plugin. Content and non-route metadata remain editable.
+The plugin records the established route of a public post, page or taxonomy term. Machine writes through WordPress preserve its slug and route-bearing hierarchy, including application-password REST, MCP, background imports and WP-CLI. Authorized saves from a logged-in WordPress browser session can change routes through wp-admin, AJAX and the block editor. Content and non-route metadata remain editable.
 
-A necessary address correction is a separate operation. Its preview shows the current and proposed routes. A migration requires a concrete reason and the confirmation returned by the current preview, creates permanent redirects and records the result.
+An automated address correction is a separate operation. Its preview shows the current and proposed routes. A migration requires a concrete reason and the confirmation returned by the current preview, creates permanent redirects and records the result.
 
 ## The Real Workflow
 
 1. Install and activate the plugin on the intended WordPress site.
-2. Edit content normally; established routes remain protected.
+2. Edit content and correct URLs through the normal WordPress controls or Permalink Manager. The saved route becomes the new reference.
 3. Use the route audit to compare stored contracts with current WordPress routes.
-4. When an address needs to change, request a migration preview and inspect the destination and affected descendants.
+4. For an automated address change with redirects, request a migration preview and inspect the destination and affected descendants.
 5. Submit that current confirmation with the same proposed change and a reason. Check the resulting route and redirects.
 
 ## Why This Feels Different
 
-Route protection applies at the WordPress write hooks, not just in one editing screen. An administrator's ordinary edit is not an automatic bypass. Intentional route changes use the migration functions, while routine copy edits do not need route-migration approval.
+Route protection applies at the WordPress write hooks. A logged-in browser session and the permission to edit the affected object allow manual corrections. Admin context or administrator permissions alone do not unlock machine writes. Each editor owns its form validation; the plugin does not maintain a competing list of third-party save actions.
 
 ## Before vs After
 
-| Task | Ordinary edit | Confirmed migration |
+| Task | Authorized browser edit | Confirmed migration |
 | --- | --- | --- |
 | Improve a title or body | Saves without changing the established address | Not needed |
-| Rename an established slug | Keeps the existing slug | Changes the route and creates a permanent redirect |
-| Change route-bearing hierarchy | Preserves the established hierarchy | Previews affected descendants and redirects their old paths |
+| Rename an established slug | Saves the chosen slug and updates the route reference | Changes the route and creates a permanent redirect |
+| Change route-bearing hierarchy | Saves the hierarchy and refreshes affected route references | Previews affected descendants and redirects their old paths |
 | Consolidate two public posts | Does not retire either route | Makes the source a recoverable draft and redirects it to the existing target |
 
 ## Who It Is For
@@ -89,14 +89,16 @@ Then call `url-lockdown/migrate-term-route` with the same values, a reason such 
 
 ## Safety and Ownership
 
+Manual edits use the editor's normal redirect behavior; URL Change Lockdown does not require Rank Math or create migration redirects for these saves. Permalink Manager remains responsible for custom-URI storage; its completed post-URI saves refresh the route reference. Direct database writes and third-party custom-URI stores are outside the native write guards. Browser-session detection identifies the request context, not whether a person or browser automation clicked Save.
+
 The plugin protects routes through normal WordPress writes; it is not a security boundary against an administrator who can alter the database or plugin code. Native WordPress and language integrations remain responsible for constructing URLs. Migrations require redirect support and report failures; do not infer success from a preview alone.
 
 ## Behavior
 
-- Freezes established post/page slugs and page hierarchy on every ordinary update path
-- Freezes established taxonomy slugs and hierarchy
-- Locks permalink structure, category base and tag base against ordinary changes
-- Applies the same invariant to wp-admin, REST, MCP, imports, WP-CLI and plugin writes
+- Preserves established post/page and taxonomy slugs and hierarchy during machine writes
+- Protects permalink structure, category base and tag base from machine writes
+- Allows authorized browser edits through wp-admin, AJAX and cookie-authenticated REST
+- Refreshes saved route references after manual edits, including Permalink Manager post-URI saves
 - Exposes route audit, migration preview and explicit confirmed migration abilities
 - Retires a duplicate public route to an existing canonical post with preview, confirmation, one permanent redirect and audit evidence
 - Creates permanent Rank Math redirects, verifies results and records bounded audit evidence
@@ -114,6 +116,12 @@ Maintained by [basicus](https://profiles.wordpress.org/basicus/). See the [plugi
 
 ## Changelog
 
+
+### 2.0.8
+
+- Restore authorized browser URL edits without a separate migration request.
+- Keep machine writes protected and refresh route references after manual post, term and permalink-setting saves.
+- Capture completed Permalink Manager post-URI changes.
 
 ### 2.0.7
 

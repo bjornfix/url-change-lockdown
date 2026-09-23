@@ -7,9 +7,13 @@ taxonomy term, including slug and route-bearing hierarchy.
 
 ## Canonical Route Contract
 
-The immutable-by-default association established between a public WordPress
-object and its Public Route. Ordinary writes preserve it regardless of whether
-they come from wp-admin, REST, import, WP-CLI, MCP, or another plugin.
+The association established between a public WordPress object and its Public
+Route. Machine writes through native WordPress guards preserve it. Authorized
+browser edits are authoritative corrections and replace the stored reference.
+The owning editor validates its form and controls its normal redirect behavior.
+Application-password REST, background imports, WP-CLI and MCP remain governed
+by the migration Interface. Direct database writes and custom-URI stores remain
+owned by the plugin that implements them.
 
 ## URL Migration
 
