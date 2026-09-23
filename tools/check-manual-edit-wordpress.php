@@ -7,6 +7,10 @@ if (PHP_SAPI !== 'cli' || !is_file('/var/www/dev.devenia.com/wp-load.php')) {
 define('WP_ADMIN', true);
 $_SERVER['HTTP_HOST']='dev.devenia.com';
 $_SERVER['REQUEST_METHOD']='POST';
+// Keep unrelated publication workflows out of these disposable route fixtures.
+// This affects only this PHP process, not the site's saved plugin state.
+require_once '/var/www/dev.devenia.com/wp-includes/plugin.php';
+add_filter('option_active_plugins', static function () { return ['url-change-lockdown/url-change-lockdown.php']; });
 require '/var/www/dev.devenia.com/wp-load.php';
 if (parse_url(home_url(), PHP_URL_HOST)!=='dev.devenia.com') throw new RuntimeException('Wrong site.');
 function expect_manual($condition, string $label): void {
@@ -22,13 +26,13 @@ $token=$sessions->create($expires);
 $cookie=wp_generate_auth_cookie($user->ID,$expires,'logged_in',$token);
 $posts=[]; $terms=[];
 $pm_options_before=get_option('permalink-manager-uris',null);
-$prefix='url-lockdown-test-'.wp_generate_password(8,false,false);
+$prefix='url-lockdown-test-'.strtolower(wp_generate_password(8,false,false));
 try {
     $parent=wp_insert_post(['post_type'=>'page','post_status'=>'publish','post_title'=>$prefix,'post_name'=>$prefix]);
     $posts[]=$parent;
     $child=wp_insert_post(['post_type'=>'page','post_status'=>'publish','post_title'=>$prefix.' child','post_name'=>'child','post_parent'=>$parent]);
     $posts[]=$child;
-    expect_manual($parent>0 && $child>0,'Disposable parent and child created');
+    expect_manual($parent>0 && $child>0 && get_post($parent)->post_status==='publish','Disposable published parent and child created');
     wp_update_post(['ID'=>$parent,'post_name'=>$prefix.'-machine']);
     expect_manual(get_post($parent)->post_name===$prefix,'Administrator without browser cookie remains locked');
     $_COOKIE[LOGGED_IN_COOKIE]=$cookie;
@@ -72,6 +76,9 @@ try {
     expect_manual(url_change_lockdown_get_post_contract($parent)['url']===get_permalink($parent),'Contract matches Permalink Manager route');
     expect_manual(strpos(get_permalink($parent),$prefix.'-pm-custom')!==false,'Permalink Manager serves custom permalink');
     $_POST=[];
+} catch (Throwable $error) {
+    fwrite(STDERR,$error->getMessage()."\n");
+    $failed=true;
 } finally {
     $_POST=[];
     unset($_COOKIE[LOGGED_IN_COOKIE]);
@@ -82,3 +89,4 @@ try {
     $sessions->destroy($token);
     echo "Temporary posts, terms, Permalink Manager URI data and session removed.\n";
 }
+exit(empty($failed)?0:1);
