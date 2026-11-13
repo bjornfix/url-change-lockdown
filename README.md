@@ -1,14 +1,14 @@
 # URL Change Lockdown
 
-Keep published WordPress addresses stable during automated updates. Authorized browser editors can correct URLs directly; automated route changes use confirmed migrations with permanent redirects.
+Keep published WordPress addresses stable during automated updates. Authorized browser editors can correct URLs directly; automated route changes use confirmed migrations with an explicit redirect choice.
 
-[![Version 2.0.8](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
+[![Version 2.0.9](https://img.shields.io/badge/version-2.0.9-blue.svg)](https://downloads.devenia.com/url-change-lockdown.zip)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-blue.svg)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 
 **Tested up to:** 7.1
-**Stable tag:** 2.0.8
+**Stable tag:** 2.0.9
 **License:** GPLv2 or later
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Keep published WordPress addresses stable during automated updates. Authorized b
 
 The plugin records the established route of a public post, page or taxonomy term. Machine writes through WordPress preserve its slug and route-bearing hierarchy, including application-password REST, MCP, background imports and WP-CLI. Authorized saves from a logged-in WordPress browser session can change routes through wp-admin, AJAX and the block editor. Content and non-route metadata remain editable.
 
-An automated address correction is a separate operation. Its preview shows the current and proposed routes. A migration requires a concrete reason and the confirmation returned by the current preview, creates permanent redirects and records the result.
+An automated address correction is a separate operation. Its preview shows the current and proposed routes. A migration requires a concrete reason and the confirmation returned by the current preview, creates permanent redirects by default and records the result. Post migrations can explicitly select no redirect in both preview and execution; that choice is bound to the confirmation.
 
 ## The Real Workflow
 
@@ -69,7 +69,7 @@ Download the stable package, install it through **Plugins → Add New → Upload
 | --- | --- |
 | `url-lockdown/audit` | Compare stored route contracts with current public routes. |
 | `url-lockdown/preview-post-migration` | Preview a post/page slug or parent change and affected child routes. |
-| `url-lockdown/migrate-post-route` | Apply the confirmed post/page change with redirects. |
+| `url-lockdown/migrate-post-route` | Apply the confirmed post/page change with the chosen redirect policy. |
 | `url-lockdown/preview-derived-post-route-migration` | Preview a post route produced by a native routing integration. |
 | `url-lockdown/migrate-derived-post-route` | Record the confirmed route and preserve the previous path while the calling integration applies its routing change. |
 | `url-lockdown/preview-post-retirement` | Preview moving one public post route to another existing public post. |
@@ -81,6 +81,14 @@ Derived-route functions serve integrations that change native routing. They crea
 
 An optional Polylang integration preserves translated posts below the translated posts-page path. It is disabled by default. Developers can enable it with `url_change_lockdown_configure_polylang_post_routes( true )` when the site's established routes use that structure. It targets directory-based language routes; it is not a general replacement for Polylang's permalink settings.
 
+## Example: Change a Post Address Without a Redirect
+
+Call `url-lockdown/preview-post-migration` with the actual `post_id`, `new_slug`, and `redirect_policy: "none"`. Review the old and proposed routes and affected children. Then call `url-lockdown/migrate-post-route` with the same values and policy, a concrete `reason`, the fresh `confirmation`, and `confirm_dangerous_action: "url-lockdown/migrate-post-route"`.
+
+The explicit choice prevents a new WordPress old-slug mapping and Rank Math's automatic post redirect for this write. Other posts and normal manual edits retain their ordinary behavior. Existing matching redirects or old-slug mappings stop the no-redirect preview and require a separate decision; this operation does not delete them. Verify the saved route and both public addresses after the site's ordinary publication. Other plugins and the public host can have their own routing behavior.
+
+Omit `redirect_policy`, or use `"permanent"`, to keep the established default. A confirmation for one policy cannot authorize the other. Taxonomy, derived-route and retirement operations retain their redirect behavior.
+
 ## Example: Rename a Translated Tag
 
 Call `url-lockdown/preview-term-migration` with the actual term ID, `taxonomy: "post_tag"` and `new_slug: "seo-for-bransjer"`. Inspect `old_route`, `proposed_route` and `affected_children`. The new URL follows the site's own language and permalink rules.
@@ -91,7 +99,7 @@ Then call `url-lockdown/migrate-term-route` with the same values, a reason such 
 
 Manual edits use the editor's normal redirect behavior; URL Change Lockdown does not require Rank Math or create migration redirects for these saves. Permalink Manager remains responsible for custom-URI storage; its completed post-URI saves refresh the route reference. Direct database writes and third-party custom-URI stores are outside the native write guards. Browser-session detection identifies the request context, not whether a person or browser automation clicked Save.
 
-The plugin protects routes through normal WordPress writes; it is not a security boundary against an administrator who can alter the database or plugin code. Native WordPress and language integrations remain responsible for constructing URLs. Migrations require redirect support and report failures; do not infer success from a preview alone.
+The plugin protects routes through normal WordPress writes; it is not a security boundary against an administrator who can alter the database or plugin code. Native WordPress and language integrations remain responsible for constructing URLs. Migrations that create redirects require redirect support and report failures; do not infer success from a preview alone.
 
 ## Behavior
 
@@ -115,6 +123,12 @@ Report the expected route, observed route, WordPress and PHP versions, and the o
 Maintained by [basicus](https://profiles.wordpress.org/basicus/). See the [plugin page](https://devenia.com/plugins/url-change-lockdown/) for product documentation and the [stable ZIP](https://downloads.devenia.com/url-change-lockdown.zip) for installation.
 
 ## Changelog
+
+### 2.0.9
+
+- Add an explicit, confirmation-bound no-redirect choice to post migration previews and execution.
+- Prevent new WordPress old-slug and automatic Rank Math redirects only for that selected write; keep default migrations and machine guards.
+- Reject existing redirect conflicts without changing their rules.
 
 
 ### 2.0.8

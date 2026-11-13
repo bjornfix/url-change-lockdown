@@ -2,7 +2,7 @@
 /**
  * Plugin Name: URL Change Lockdown
  * Description: Preserves established public WordPress routes and provides explicit, audited URL migrations.
- * Version: 2.0.8
+ * Version: 2.0.9
  * Requires at least: 6.9
  * Requires PHP: 7.4
  * Author: basicus
@@ -244,7 +244,10 @@ function url_change_lockdown_descendant_routes( int $post_id ): array {
 	return $routes;
 }
 
-function url_change_lockdown_preview_post_migration( int $post_id, string $new_slug, int $new_parent = -1 ): array {
+function url_change_lockdown_preview_post_migration( int $post_id, string $new_slug, int $new_parent = -1, string $redirect_policy = 'permanent' ): array {
+	if ( ! in_array( $redirect_policy, array( 'permanent', 'none' ), true ) ) {
+		return array( 'success' => false, 'code' => 'invalid_redirect_policy', 'message' => 'Select permanent redirects or no redirect.' );
+	}
 	$post = get_post( $post_id );
 	if ( ! $post || ! url_change_lockdown_is_post_public( $post ) ) {
 		return array( 'success' => false, 'code' => 'public_post_not_found', 'message' => 'Published public post or page not found.' );
@@ -274,7 +277,77 @@ function url_change_lockdown_preview_post_migration( int $post_id, string $new_s
 		$new_path = preg_replace( '#^' . preg_quote( (string) $old_route['path'], '#' ) . '#', (string) $new_route['path'], $old_path );
 		$affected[] = array( 'object_id' => (int) $child['object_id'], 'old_path' => $old_path, 'new_path' => is_string( $new_path ) ? $new_path : '' );
 	}
-	return array( 'success' => true, 'object_id' => $post_id, 'old_route' => $old_route, 'proposed_route' => $new_route, 'affected_children' => $affected, 'confirmation' => hash( 'sha256', wp_json_encode( array( $post_id, $old_route, $new_route, $affected ) ) ) );
+	$confirmation_data = array( $post_id, $old_route, $new_route, $affected );
+	if ( 'none' === $redirect_policy ) {
+		// Keep existing confirmation semantics for the default permanent migration.
+		$confirmation_data[] = $redirect_policy;
+		if ( in_array( (string) $post->post_name, (array) get_post_meta( $post_id, '_wp_old_slug' ), true ) ) {
+			return array( 'success' => false, 'code' => 'existing_old_slug_redirect', 'message' => 'An existing WordPress old-slug mapping needs a separate decision; it will not be removed by this operation.' );
+		}
+		if ( class_exists( '\\RankMath\\Redirections\\DB' ) ) {
+			$paths = array( $old_route['path'], $new_route['path'] );
+			foreach ( $affected as $child ) {
+				$paths[] = $child['old_path'];
+				$paths[] = $child['new_path'];
+			}
+			foreach ( array_unique( $paths ) as $path ) {
+				if ( \RankMath\Redirections\DB::match_redirections( trim( (string) $path, '/' ) ) ) {
+					return array( 'success' => false, 'code' => 'existing_redirect_conflict', 'message' => 'An active redirect already matches an affected route. Existing rules require a separate decision and are not changed by this operation.' );
+				}
+			}
+		}
+	}
+	return array( 'success' => true, 'object_id' => $post_id, 'old_route' => $old_route, 'proposed_route' => $new_route, 'affected_children' => $affected, 'redirect_policy' => $redirect_policy, 'confirmation' => hash( 'sha256', wp_json_encode( $confirmation_data ) ) );
+}
+
+/** Write one confirmed route while limiting redirect side effects to its selected policy. */
+function url_change_lockdown_update_post_route( array $data, string $redirect_policy ) {
+	global $wp_filter;
+	$post_id = (int) $data['ID'];
+	$scope = 'post:' . $post_id;
+	$previous_scope = $GLOBALS['url_change_lockdown_migration_scope'][ $scope ] ?? null;
+	$old_slug_filter = static function ( $check, $object_id, $meta_key ) use ( $post_id ) {
+		return (int) $object_id === $post_id && '_wp_old_slug' === $meta_key ? false : $check;
+	};
+	$watchers = array();
+	if ( 'none' === $redirect_policy ) {
+		add_filter( 'add_post_metadata', $old_slug_filter, 10, 3 );
+		// Rank Math has no per-post veto for its automatic watcher. Keep the
+		// registered callback working for other posts, including nested saves.
+		foreach ( isset( $wp_filter['post_updated'] ) ? $wp_filter['post_updated']->callbacks : array() as $priority => $callbacks ) {
+			foreach ( $callbacks as $entry ) {
+				$callback = $entry['function'];
+				if ( ! is_array( $callback ) || ! is_object( $callback[0] ) || ! is_a( $callback[0], 'RankMath\\Redirections\\Watcher' ) || 'handle_post_update' !== $callback[1] ) {
+					continue;
+				}
+				$wrapper = static function ( $id, $post, $before ) use ( $callback, $post_id ) {
+					if ( (int) $id !== $post_id ) {
+						call_user_func( $callback, $id, $post, $before );
+					}
+				};
+				remove_action( 'post_updated', $callback, $priority );
+				add_action( 'post_updated', $wrapper, $priority, 3 );
+				$watchers[] = array( $callback, $wrapper, $priority, $entry['accepted_args'] );
+			}
+		}
+	}
+	$GLOBALS['url_change_lockdown_migration_scope'][ $scope ] = true;
+	try {
+		return wp_update_post( $data, true );
+	} finally {
+		if ( null === $previous_scope ) {
+			unset( $GLOBALS['url_change_lockdown_migration_scope'][ $scope ] );
+		} else {
+			$GLOBALS['url_change_lockdown_migration_scope'][ $scope ] = $previous_scope;
+		}
+		if ( 'none' === $redirect_policy ) {
+			remove_filter( 'add_post_metadata', $old_slug_filter, 10 );
+			foreach ( $watchers as $watcher ) {
+				remove_action( 'post_updated', $watcher[1], $watcher[2] );
+				add_action( 'post_updated', $watcher[0], $watcher[2], $watcher[3] );
+			}
+		}
+	}
 }
 
 /** Preview a route change produced by an external native route driver. */
@@ -612,10 +685,11 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 	$new_parent = array_key_exists( 'new_parent_id', $input ) ? absint( $input['new_parent_id'] ) : -1;
 	$reason     = sanitize_textarea_field( (string) ( $input['reason'] ?? '' ) );
 	$confirm    = (string) ( $input['confirmation'] ?? '' );
+	$redirect_policy = (string) ( $input['redirect_policy'] ?? 'permanent' );
 	if ( mb_strlen( trim( $reason ) ) < 12 ) {
 		return array( 'success' => false, 'code' => 'reason_required', 'message' => 'A concrete migration reason of at least 12 characters is required.' );
 	}
-	$preview = url_change_lockdown_preview_post_migration( $post_id, $new_slug, $new_parent );
+	$preview = url_change_lockdown_preview_post_migration( $post_id, $new_slug, $new_parent, $redirect_policy );
 	if ( empty( $preview['success'] ) || ! hash_equals( (string) $preview['confirmation'], $confirm ) ) {
 		return array( 'success' => false, 'code' => 'confirmation_mismatch', 'message' => 'Migration confirmation does not match the current preview.', 'preview' => $preview );
 	}
@@ -623,18 +697,14 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 		return array( 'success' => false, 'code' => 'route_unchanged', 'message' => 'The proposed public route is unchanged.' );
 	}
 	$new_parent = (int) $preview['proposed_route']['post_parent'];
-	$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] = true;
-	$result = wp_update_post( array( 'ID' => $post_id, 'post_name' => $new_slug, 'post_parent' => $new_parent ), true );
-	unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] );
+	$result = url_change_lockdown_update_post_route( array( 'ID' => $post_id, 'post_name' => $new_slug, 'post_parent' => $new_parent ), $redirect_policy );
 	if ( is_wp_error( $result ) ) {
 		return array( 'success' => false, 'code' => 'route_update_failed', 'message' => $result->get_error_message() );
 	}
 	$post     = get_post( $post_id );
 	$observed = $post ? url_change_lockdown_post_route( $post ) : array();
 	if ( empty( $observed ) || $observed['path'] !== $preview['proposed_route']['path'] ) {
-		$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] = true;
-		wp_update_post( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ) );
-		unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] );
+		url_change_lockdown_update_post_route( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ), $redirect_policy );
 		return array( 'success' => false, 'code' => 'route_verification_failed_rolled_back', 'message' => 'Observed route did not match the confirmed route; the old route was restored.', 'observed_route' => $observed );
 	}
 	$redirects = array();
@@ -645,12 +715,10 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 			$redirect_pairs[] = array( 'old_path' => $child['old_path'], 'new_url' => (string) get_permalink( $child_post ) );
 		}
 	}
-	foreach ( $redirect_pairs as $pair ) {
+	foreach ( 'permanent' === $redirect_policy ? $redirect_pairs : array() as $pair ) {
 		$redirect_id = url_change_lockdown_create_redirect( (string) $pair['old_path'], (string) $pair['new_url'] );
 		if ( is_wp_error( $redirect_id ) ) {
-			$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] = true;
-			wp_update_post( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ) );
-			unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] );
+			url_change_lockdown_update_post_route( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ), $redirect_policy );
 			if ( $redirects && class_exists( '\\RankMath\\Redirections\\DB' ) ) {
 				\RankMath\Redirections\DB::delete( $redirects );
 			}
@@ -661,9 +729,7 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 	}
 	$finalization = apply_filters( 'url_lockdown_finalize_post_migration', array( 'success' => true ), $post_id );
 	if ( ! is_array( $finalization ) || empty( $finalization['success'] ) ) {
-		$GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] = true;
-		wp_update_post( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ) );
-		unset( $GLOBALS['url_change_lockdown_migration_scope'][ 'post:' . $post_id ] );
+		url_change_lockdown_update_post_route( array( 'ID' => $post_id, 'post_name' => $preview['old_route']['post_name'], 'post_parent' => $preview['old_route']['post_parent'] ), $redirect_policy );
 		if ( $redirects && class_exists( '\\RankMath\\Redirections\\DB' ) ) {
 			\RankMath\Redirections\DB::delete( $redirects );
 		}
@@ -673,9 +739,10 @@ function url_change_lockdown_execute_post_migration( array $input ): array {
 	$contract = url_change_lockdown_store_post_contract( $post_id, true );
 	$audit = array( 'migrated_at' => gmdate( 'c' ), 'actor_user_id' => get_current_user_id(), 'reason' => $reason, 'old_route' => $preview['old_route'], 'new_route' => $contract, 'affected_children' => $preview['affected_children'], 'redirect_ids' => $redirects );
 	$audit['finalization'] = $finalization;
+	$audit['redirect_policy'] = $redirect_policy;
 	url_change_lockdown_append_audit( $audit );
 	do_action( 'url_lockdown_public_route_migrated', $post_id, $preview['old_route'], $contract, $audit );
-	return array( 'success' => true, 'message' => 'Public route migrated and permanent redirects created.', 'migration' => $audit );
+	return array( 'success' => true, 'message' => 'none' === $redirect_policy ? 'Public route migrated without creating redirects.' : 'Public route migrated and permanent redirects created.', 'migration' => $audit );
 }
 
 function url_change_lockdown_audit( array $input = array() ): array {
@@ -713,8 +780,8 @@ function url_change_lockdown_register_abilities(): void {
 	}
 	$permission = static function (): bool { return current_user_can( 'manage_options' ); };
 	wp_register_ability( 'url-lockdown/audit', array( 'label' => 'Audit canonical routes', 'description' => 'Compare established Canonical Route Contracts with current observed public routes.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'properties' => array( 'limit' => array( 'type' => 'integer', 'minimum' => 1, 'maximum' => 500 ), 'offset' => array( 'type' => 'integer', 'minimum' => 0 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_audit', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
-	wp_register_ability( 'url-lockdown/preview-post-migration', array( 'label' => 'Preview post URL migration', 'description' => 'Preview a public post/page URL migration and all affected child routes.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_post_migration( absint( $input['post_id'] ?? 0 ), (string) ( $input['new_slug'] ?? '' ), array_key_exists( 'new_parent_id', $input ) ? absint( $input['new_parent_id'] ) : -1 ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
-	wp_register_ability( 'url-lockdown/migrate-post-route', array( 'label' => 'Migrate post URL', 'description' => 'Explicitly migrate a confirmed public post/page route, create permanent redirects, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug', 'reason', 'confirmation' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-post-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_post_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
+	wp_register_ability( 'url-lockdown/preview-post-migration', array( 'label' => 'Preview post URL migration', 'description' => 'Preview a public post/page URL migration and all affected child routes.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'redirect_policy' => array( 'type' => 'string', 'enum' => array( 'permanent', 'none' ), 'default' => 'permanent' ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_post_migration( absint( $input['post_id'] ?? 0 ), (string) ( $input['new_slug'] ?? '' ), array_key_exists( 'new_parent_id', $input ) ? absint( $input['new_parent_id'] ) : -1, (string) ( $input['redirect_policy'] ?? 'permanent' ) ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
+	wp_register_ability( 'url-lockdown/migrate-post-route', array( 'label' => 'Migrate post URL', 'description' => 'Explicitly migrate a confirmed public post/page route, choose permanent redirects or explicitly no redirect, and record audit evidence.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_slug', 'reason', 'confirmation' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_slug' => array( 'type' => 'string' ), 'new_parent_id' => array( 'type' => 'integer', 'minimum' => 0 ), 'redirect_policy' => array( 'type' => 'string', 'enum' => array( 'permanent', 'none' ), 'default' => 'permanent' ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-post-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_post_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
 	wp_register_ability( 'url-lockdown/preview-derived-post-route-migration', array( 'label' => 'Preview route-driver migration', 'description' => 'Preview a post URL change produced by a native route driver such as Polylang.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_url' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_url' => array( 'type' => 'string', 'format' => 'uri' ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_derived_post_route_migration( absint( $input['post_id'] ?? 0 ), (string) ( $input['new_url'] ?? '' ) ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );
 	wp_register_ability( 'url-lockdown/migrate-derived-post-route', array( 'label' => 'Migrate route-driver URL', 'description' => 'Confirm a route-driver URL change, preserve the previous path with a permanent redirect, and update its canonical contract.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'post_id', 'new_url', 'reason', 'confirmation' ), 'properties' => array( 'post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'new_url' => array( 'type' => 'string', 'format' => 'uri' ), 'reason' => array( 'type' => 'string', 'minLength' => 12 ), 'confirmation' => array( 'type' => 'string', 'minLength' => 64, 'maxLength' => 64 ), 'confirm_dangerous_action' => array( 'type' => 'string', 'enum' => array( 'url-lockdown/migrate-derived-post-route' ) ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => 'url_change_lockdown_execute_derived_post_route_migration', 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => false, 'destructive' => true, 'idempotent' => false ) ) ) );
 	wp_register_ability( 'url-lockdown/preview-post-retirement', array( 'label' => 'Preview post URL retirement', 'description' => 'Preview retiring one public post/page route to another existing public post/page.', 'category' => 'site', 'input_schema' => array( 'type' => 'object', 'required' => array( 'source_post_id', 'target_post_id' ), 'properties' => array( 'source_post_id' => array( 'type' => 'integer', 'minimum' => 1 ), 'target_post_id' => array( 'type' => 'integer', 'minimum' => 1 ) ), 'additionalProperties' => false ), 'output_schema' => array( 'type' => 'object' ), 'execute_callback' => static function ( $input ): array { return url_change_lockdown_preview_post_retirement( absint( $input['source_post_id'] ?? 0 ), absint( $input['target_post_id'] ?? 0 ) ); }, 'permission_callback' => $permission, 'meta' => array( 'annotations' => array( 'readonly' => true, 'destructive' => false, 'idempotent' => true ) ) ) );

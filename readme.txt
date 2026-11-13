@@ -4,7 +4,7 @@ Tags: security, hardening, permalinks
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.8
+Stable tag: 2.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,6 +22,10 @@ Automated URL corrections use separate preview and migration abilities. A
 migration requires a concrete reason and matching confirmation, shows affected
 child routes, creates permanent Rank Math redirects, verifies the observed
 route, records audit evidence, and rolls back if redirects cannot be created.
+Post migrations can explicitly select redirect_policy "none" in both preview
+and execution. This prevents new WordPress old-slug and automatic Rank Math
+redirects for that write. The default remains "permanent". Existing matching
+rules stop the no-redirect operation and are not deleted.
 Duplicate post routes can also be retired to an existing canonical public post
 with the same preview, confirmation, redirect, audit, and rollback controls.
 Site-wide permalink, category-base and tag-base settings are locked against
@@ -66,6 +70,11 @@ No. Content links are not locked by this plugin.
 No. Post meta values are not locked by this plugin.
 
 == Changelog ==
+
+= 2.0.9 =
+* Add a confirmation-bound no-redirect choice to post migrations while preserving the permanent-redirect default.
+* Prevent new WordPress old-slug and automatic Rank Math redirects only for the selected write.
+* Reject existing matching redirects without modifying them.
 
 = 2.0.8 =
 * Restore authorized browser URL edits without a separate migration request.
